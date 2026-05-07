@@ -2,7 +2,7 @@
 - install ollama and the model gemma3:1b (or download any model that can run on your machine smoothly)
 - in the command prompt create a model file in which you add your info "https://www.youtube.com/watch?v=VBtSCLU5tsU" and save it as gemma-custom3:1b
 - specify the logs directory in (LOG_DIR = r"..\logs") line 29 in portfolio/"Web Apps"/7 portfolio_3D/ollama.py
-- change your personal picture in portfolio/"Web Apps"/7 portfolio_3D/images/mendesk.png
+- change your picture in portfolio/"Web Apps"/7 portfolio_3D/images/mendesk.png (white background or invisible recommended)
 - add your links in <div class="social-container"> line 34 in portfolio/"Web Apps"/7 portfolio_3D/index.html
 - add your contact infos in line 70 <div class="contact-container">
 
