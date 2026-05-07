@@ -1,0 +1,4 @@
+2026-05-07 09:55:14,416 - INFO - Starting Ollama server on http://localhost:5343
+2026-05-07 09:55:14,417 - INFO - Logs directory: ..\logs
+2026-05-07 09:57:33,813 - INFO - Received chat request - Model: gemma3:1b, Message: hi sir
+2026-05-07 09:57:42,466 - INFO - Interaction logged to ..\logs\conversations_20260507.log

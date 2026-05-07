@@ -1,0 +1,2384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/png" href="images/icon.png">
+<link rel="apple-touch-icon" href="images/icon.png">
+<link rel="shortcut icon" href="images/icon.png" type="image/x-icon">
+</head>
+<body>
+    <div id="canvas-container"></div>
+<div id="loading-screen">
+    <div id="status-message">
+<h2 class="wave">
+
+                <span style="--i:9">&nbsp;</span>
+                <span style="--i:10">P</span>
+                <span style="--i:11">o</span>
+                <span style="--i:12">r</span>
+                <span style="--i:13">t</span>
+                <span style="--i:14">f</span>
+                <span style="--i:15">o</span>
+                <span style="--i:16">l</span>
+                <span style="--i:17">i</span>
+                <span style="--i:18">o</span>
+            </h2>
+        <img src="images/loading.gif" alt="Loading..." id="loading-gif">
+        <p id="loading-text"></p>
+        <div id="loading-controls">
+            <p>WASD to move, Q/E to go up/down</p>
+            <p>Click on files/folders to interact</p>
+        </div>
+    </div>
+</div>
+    <div id="error-message">
+        <p>Could not connect to server.</p>
+        <button id="retry-button">Retry Connection</button>
+    </div>
+    <div id="path-display">
+        <span id="current-path">Portfolio</span>
+    </div>
+    <div id="back-button" title="Go back">←</div>
+    <div id="surface"></div>
+    <div id="sun-rays"></div>
+    <div id="depth-indicator">Depth: Surface</div>
+    <div id="holographic-display">
+        <button id="close-hologram">×</button>
+        <h3 id="hologram-title">File Information</h3>
+        <div class="file-info">
+            <div>
+                <span class="label">Name:</span>
+                <span class="value" id="info-name">-</span>
+            </div>
+            <div>
+                <span class="label">Type:</span>
+                <span class="value" id="info-type">-</span>
+            </div>
+            <div>
+                <span class="label">Path:</span>
+                <span class="value" id="info-path">-</span>
+            </div>
+        </div>
+        <div class="file-description" id="info-description">
+            No description available.
+        </div>
+        <div class="folder-contents" id="folder-contents" style="display: none;">
+            <h4>Contents:</h4>
+            <ul id="folder-items"></ul>
+        </div>
+    </div>
+ <div id="controls-help">
+        <p>WASD to move, Q/E to go up/down</p>
+        <p>Click on files/folders to interact</p>
+ </div>
+    <audio id="water-audio" loop>
+        <source src="audio/1.mp3" type="audio/mpeg">
+    </audio>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.17/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script src="js/anglerfish.js"></script>
+    <script src="js/loadingtext.js"></script>
+<script type="module">
+    import { getFileType, generateDescription, getColorForExtension, getFileIcon } from './js/ext.js';
+        class FileExplorer {
+constructor() {
+    this.autoFocus = new AutoFocusController(this);
+    this.anglerfish = new AnglerFish(this);
+    this.creatingObjects = false;
+    this.loadingText = new LoadingText('loading-text', {
+        text: 'Loading...',
+        speed: 80,
+        delay: 70,
+        cursor: '_'
+    });
+this.hasInitialized = false;
+    this.surfaceElement = document.getElementById('surface');
+    this.surfaceElement.style.opacity = '0';
+    this.surfaceElement.style.background = 'transparent';
+    this.baseUrl = window.location.origin;
+    this.apiBase = this.baseUrl;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('loading-screen').style.display = 'flex';
+    document.getElementById('status-message').style.display = 'block';
+    document.getElementById('controls-help').style.display = 'block';
+    this.init();
+    this.createLights();
+    this.createSea();
+    this.createBackgroundLayers();
+    this.fileObjects = new THREE.Group();
+    this.scene.add(this.fileObjects);
+    this.depthLevel = 0;
+    this.maxDepth = 5;
+    this.currentPath = '';
+    this.pathHistory = [];
+    this.hologramVisible = false;
+    this.hologramTimeout = null;
+    this.hologramPosition = new THREE.Vector3();
+    this.nameLabels = [];    
+    document.getElementById('close-hologram').addEventListener('click', () => {
+        this.hideHologram();
+    });
+    document.getElementById('back-button').addEventListener('click', () => {
+        this.goBack();
+    });    
+    document.getElementById('retry-button').addEventListener('click', () => {
+        this.connectToServer();
+    });    
+    this.setupEventListeners();    
+    this.loadingText.start();    
+    this.connectToServer();
+    this.waterAudio = document.getElementById('water-audio');
+    this.waterAudio.volume = 0.3;
+    this.waterAudio.loop = true;
+    const playAudio = () => {
+        const playPromise = this.waterAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => {
+                setTimeout(playAudio, 1000);
+            });
+        }
+    };
+    playAudio();
+}
+init() {
+    if (this._initialized) return;
+    this._initialized = true;
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x000428);
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const radius = 0; 
+    const angle = 0; 
+    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.shadowMap.enabled = true;
+    document.getElementById('canvas-container').appendChild(this.renderer.domElement);    
+    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();    
+    this.camera.position.set(0, 5, 15);
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
+    this.initialCameraPosition = this.camera.position.clone();
+    this.initialCameraTarget = this.controls.target.clone();    
+    window.addEventListener('resize', () => {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+    });    
+    this.moveState = {
+        forward: false,
+        backward: false,
+        left: false,
+        right: false,
+        up: false,
+        down: false
+    };
+    this.setupKeyboardControls();    
+    this.setupClickHandlers();
+}
+setupEventListeners() {
+window.addEventListener('load', () => {
+    if (window.fileExplorerInstance) return;
+    window.fileExplorerInstance = new FileExplorer();
+});
+    document.getElementById('close-hologram').addEventListener('click', () => {
+        this.hideHologram();
+    });    
+    document.getElementById('back-button').addEventListener('click', () => {
+        this.goBack();
+    });    
+document.getElementById('retry-button').addEventListener('click', () => {
+    this.loadingText.setText('Retrying connection...');
+    this.loadingText.start();
+    this.connectToServer();
+});
+    document.getElementById('controls-help').style.display = 'none';
+}
+interpolateColorComponent(comp1, comp2, factor) {
+    return comp1;
+}
+updateSurfaceElement(angleDegrees, intensity) {
+    if (!this.surfaceElement) return;
+    let surfaceOpacity = 0;
+    if (angleDegrees <= 45) {
+        surfaceOpacity = 1 - (angleDegrees / 45);
+    } else if (angleDegrees <= 90) {
+        surfaceOpacity = 1 - ((angleDegrees - 45) / 45);
+    }
+    this.surfaceElement.style.opacity = surfaceOpacity;
+    const sunRaysElement = document.getElementById('sun-rays');
+    if (sunRaysElement) {
+        sunRaysElement.style.opacity = surfaceOpacity * 0.8;
+    }
+}
+createBackgroundLayers() {
+    this.backgroundLayers = new THREE.Group();
+    this.scene.add(this.backgroundLayers);
+    this.createFloatingBubbles(50, 0xffffff, 0.8, 5, 20, 10, 50);
+    this.lastCameraPosition = this.camera.position.clone();
+    this.surfaceElement = document.getElementById('surface');
+}
+createBubbleLayer(count, color, opacity, minSize, maxSize, minDistance, maxDistance, minSpeed, maxSpeed) {
+    const bubbleGroup = new THREE.Group();
+    const parallaxFactor = 0.05 + Math.random() * 0.15;
+    bubbleGroup.userData = { parallaxFactor: parallaxFactor, isBubbleLayer: true };
+    for (let i = 0; i < count; i++) {
+        const size = minSize + Math.random() * (maxSize - minSize);
+        let geometry;
+        if (Math.random() > 0.7) {
+            geometry = new THREE.IcosahedronGeometry(size * 0.01, 0);
+        } else {
+            geometry = new THREE.SphereGeometry(size * 0.01, 12, 12);
+        }
+        const material = new THREE.MeshBasicMaterial({ 
+            color: color, 
+            transparent: true, 
+            opacity: opacity,
+            blending: THREE.AdditiveBlending
+        });
+        const bubble = new THREE.Mesh(geometry, material);
+        const radius = minDistance + Math.random() * (maxDistance - minDistance);
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        bubble.position.set(
+            radius * Math.sin(phi) * Math.cos(theta),
+            radius * Math.sin(phi) * Math.sin(theta) - 25,
+            radius * Math.cos(phi)
+        );
+        const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
+        const floatSpeed = 0.1 + Math.random() * 0.3;
+        bubble.userData = {
+            originalPosition: bubble.position.clone(),
+            movementFactor: 0.03 + Math.random() * 0.07,
+            floatSpeed: floatSpeed,
+            riseSpeed: speed,
+            rotationSpeed: (Math.random() - 0.5) * 0.02,
+            size: size,
+            wobbleIntensity: 0.1 + Math.random() * 0.2,
+            wobbleSpeed: 0.5 + Math.random() * 1.0
+        };
+        bubbleGroup.add(bubble);
+    }  
+    this.backgroundLayers.add(bubbleGroup);
+}
+createParticleLayer(count, color, opacity, minSize, maxSize, minDistance, maxDistance) {
+    const particleGroup = new THREE.Group();
+    const parallaxFactor = 0.05 + Math.random() * 0.15;
+    particleGroup.userData = { parallaxFactor: parallaxFactor };
+    for (let i = 0; i < count; i++) {
+        const size = Math.random() * (maxSize - minSize);
+        const geometry = new THREE.SphereGeometry(size * 0.01, 8, 8);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: color, 
+            transparent: true, 
+            opacity: opacity 
+        });
+        const particle = new THREE.Mesh(geometry, material);
+        const radius = minDistance + Math.random() * (maxDistance - minDistance);
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        particle.position.set(
+            radius * Math.sin(phi) * Math.cos(theta),
+            radius * Math.sin(phi) * Math.sin(theta) - 20,
+            radius * Math.cos(phi)
+        );
+        particle.userData = {
+            originalPosition: particle.position.clone(),
+            movementFactor: 0.03 + Math.random() * 0.07,
+            floatSpeed: 0.2 + Math.random() * 0.3
+        };
+        particleGroup.add(particle);
+    }
+    this.backgroundLayers.add(particleGroup);
+}
+createLargeElements(count, color, opacity, minSize, maxSize, minDistance, maxDistance) {
+    const elementGroup = new THREE.Group();
+    elementGroup.userData = { parallaxFactor: 0.2 + Math.random() * 0.1 };
+    for (let i = 0; i < count; i++) {
+        const size = minSize + Math.random() * (maxSize - minSize);
+        let geometry;
+        if (Math.random() > 0.5) {
+            geometry = new THREE.ConeGeometry(size * 0.015, size * 0.05, 5);
+        } else {
+            geometry = new THREE.CylinderGeometry(size * 0.01, size * 0.02, size * 0.04, 6);
+        }
+        const material = new THREE.MeshBasicMaterial({ 
+            color: color, 
+            transparent: true, 
+            opacity: opacity,
+            side: THREE.DoubleSide
+        });
+        const element = new THREE.Mesh(geometry, material);
+        const radius = minDistance + Math.random() * (maxDistance - minDistance);
+        const angle = Math.random() * Math.PI * 2;
+        element.position.set(
+            Math.cos(angle) * radius,
+            -35 + Math.random() * 10,
+            Math.sin(angle) * radius
+        );
+        element.rotation.x = Math.random() * 0.2 - 0.1;
+        element.rotation.z = Math.random() * 0.2 - 0.1;
+        element.userData = {
+            originalPosition: element.position.clone(),
+            movementFactor: 0.02 + Math.random() * 0.03
+        };
+        elementGroup.add(element);
+    }
+    this.backgroundLayers.add(elementGroup);
+}
+updateBackgroundParallax() {
+    const cameraMovement = new THREE.Vector3().subVectors(
+        this.camera.position, 
+        this.lastCameraPosition
+    );
+    this.backgroundLayers.children.forEach(layer => {
+        const parallaxFactor = layer.userData.parallaxFactor;
+        layer.position.x -= cameraMovement.x * parallaxFactor * 1.5;
+        layer.position.y -= cameraMovement.y * parallaxFactor * 1.2;
+        layer.position.z -= cameraMovement.z * parallaxFactor * 1.5;
+        const time = Date.now() * 0.001;
+        layer.children.forEach(element => {
+            if (layer.userData.isBubbleLayer) {
+                const factor = element.userData.movementFactor || 0.05;
+                const floatSpeed = element.userData.floatSpeed || 0.3;
+                const riseSpeed = element.userData.riseSpeed || 0.1;
+                if (element.userData.originalPosition) {
+                    element.position.x = element.userData.originalPosition.x + 
+                                       Math.sin(time * element.userData.wobbleSpeed) * element.userData.wobbleIntensity;
+                    element.position.y = element.userData.originalPosition.y + 
+                                       Math.cos(time * floatSpeed * 0.7) * 0.6 +
+                                       time * riseSpeed; 
+                    element.position.z = element.userData.originalPosition.z + 
+                                       Math.sin(time * element.userData.wobbleSpeed * 1.2) * element.userData.wobbleIntensity;
+                }
+                element.rotation.x += element.userData.rotationSpeed;
+                element.rotation.y += element.userData.rotationSpeed * 0.7;
+                if (element.position.y > 30) {
+                    element.position.y = element.userData.originalPosition.y - 40;
+                }
+            }
+            else if (layer.userData.isFloatingBubbles) {
+                element.position.y += element.userData.riseSpeed;
+                element.position.x += Math.sin(time * element.userData.wobble.speed) * element.userData.wobble.x * 0.1;
+                element.position.z += Math.cos(time * element.userData.wobble.speed) * element.userData.wobble.z * 0.1;
+                element.rotation.x += element.userData.rotationSpeed;
+                element.rotation.y += element.userData.rotationSpeed * 1.2;
+                if (element.position.y > element.userData.maxHeight) {
+                    element.position.y = element.userData.resetY;
+                    element.position.x = (Math.random() - 0.5) * 100;
+                    element.position.z = (Math.random() - 0.5) * 100;
+                }
+            }
+            else if (layer.userData.isBubbleClusters) {
+                element.userData.angle += element.userData.orbitSpeed * 0.01;
+                element.position.x = element.userData.center.x + 
+                                   Math.cos(element.userData.angle) * element.userData.radius;
+                element.position.y = element.userData.center.y + 
+                                   Math.sin(time * element.userData.floatSpeed) * 0.5;
+                element.position.z = element.userData.center.z + 
+                                   Math.sin(element.userData.angle) * element.userData.radius;
+                element.rotation.x += element.userData.rotationSpeed;
+                element.rotation.y += element.userData.rotationSpeed * 0.8;
+            }
+            else {
+                const factor = element.userData.movementFactor || 0.05;
+                if (element.userData.originalPosition) {
+                    element.position.x = element.userData.originalPosition.x + 
+                                       Math.sin(time * factor) * 0.8;
+                    element.position.y = element.userData.originalPosition.y + 
+                                       Math.cos(time * factor * 0.7) * 0.6;
+                    element.position.z = element.userData.originalPosition.z + 
+                                       Math.sin(time * factor * 1.2) * 0.8;
+                }
+                if (element.geometry.type === 'ConeGeometry' || element.geometry.type === 'CylinderGeometry') {
+                    element.rotation.y += 0.001 * factor;
+                    element.position.y += Math.sin(time * factor * 0.5) * 0.05;
+                }
+            }
+        });
+    });
+    this.updateSurfaceVisibility();
+    this.lastCameraPosition.copy(this.camera.position);
+}
+updateSurfaceVisibility() {
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+    const upVector = new THREE.Vector3(0, 1, 0);
+    const angle = Math.acos(cameraDirection.dot(upVector));
+    const angleDegrees = angle * (180 / Math.PI);
+    let lightIntensity = 1;
+    if (angleDegrees <= 45) {
+        lightIntensity = 1 - (angleDegrees / 90);
+    } else if (angleDegrees <= 90) {
+        lightIntensity = 0.5 - ((angleDegrees - 45) / 90);
+    } else {
+        lightIntensity = 0;
+    }
+    this.updateSceneLighting(angleDegrees, lightIntensity);
+    this.updateSurfaceElement(angleDegrees, lightIntensity);
+}
+updateParticlesColor(depthColor, intensity) {
+    if (!this.particles) return;
+    const particleLightness = 1.5 - (this.depthLevel / this.maxDepth) * 0.7;
+    const particleColor = new THREE.Color(depthColor);
+    particleColor.r *= particleLightness;
+    particleColor.g *= particleLightness;
+    particleColor.b *= particleLightness;
+    this.particles.children.forEach(particle => {
+        if (particle.material) {
+            particle.material.color = particleColor;
+            particle.material.opacity = 0.4 * intensity;
+        }
+    });
+}
+updateSceneLighting(angleDegrees, intensity) {
+    const depthColors = [
+        0x75DDFF,
+        0x55CAFF,
+        0x44C4FF,
+        0x327eea, 
+        0x0055ce,
+        0x004cb7,
+        0x003989,
+        0x00265b,
+        0x00132d, 
+        0x000000  
+    ];
+    let depthColor;
+    if (this.depthLevel <= 0) {
+        depthColor = depthColors[0];
+    } else if (this.depthLevel >= depthColors.length - 1) {
+        depthColor = depthColors[depthColors.length - 1];
+    } else {
+        const prevIndex = Math.floor(this.depthLevel);
+        const nextIndex = Math.ceil(this.depthLevel);
+        const factor = this.depthLevel - prevIndex;
+        const prevColor = depthColors[prevIndex];
+        const nextColor = depthColors[nextIndex];
+        const r1 = (prevColor >> 16) & 0xff;
+        const g1 = (prevColor >> 8) & 0xff;
+        const b1 = prevColor & 0xff;
+        const r2 = (nextColor >> 16) & 0xff;
+        const g2 = (nextColor >> 8) & 0xff;
+        const b2 = nextColor & 0xff;
+        const r = Math.round(r1 + (r2 - r1) * factor);
+        const g = Math.round(g1 + (g2 - g1) * factor);
+        const b = Math.round(b1 + (b2 - b1) * factor);
+        depthColor = (r << 16) | (g << 8) | b;
+    }
+    const depthIntensityFactor = 1 - (this.depthLevel / this.maxDepth) * 0.8;
+    const finalIntensity = intensity * depthIntensityFactor;
+    const r = (depthColor >> 16) & 0xff;
+    const g = (depthColor >> 8) & 0xff;
+    const b = depthColor & 0xff;    
+    const brightnessFactor = 0.3 + (finalIntensity * 0.7);
+    const adjustedR = Math.min(255, Math.round(r * brightnessFactor));
+    const adjustedG = Math.min(255, Math.round(g * brightnessFactor));
+    const adjustedB = Math.min(255, Math.round(b * brightnessFactor));
+    const finalColor = (adjustedR << 16) | (adjustedG << 8) | adjustedB;
+    this.scene.background = new THREE.Color(finalColor);
+    if (this.sea && this.sea.material) {
+        const seaLightness = 1.2 - (this.depthLevel / this.maxDepth) * 0.4;
+        const seaColor = new THREE.Color(depthColor);
+        seaColor.r *= seaLightness;
+        seaColor.g *= seaLightness;
+        seaColor.b *= seaLightness;
+        this.sea.material.color = seaColor;
+    }    
+    const ambientIntensity = finalIntensity * (0.8 - (this.depthLevel / this.maxDepth) * 0.5);
+    this.scene.children.forEach(child => {
+        if (child instanceof THREE.AmbientLight) {
+            child.intensity = ambientIntensity;
+        }        
+        if (child instanceof THREE.DirectionalLight) {
+            child.intensity = 0.6 * depthIntensityFactor;
+        }
+    });    
+    const depthIndicator = document.getElementById('depth-indicator');
+    if (depthIndicator) {
+        if (finalIntensity < 0.3) {
+            depthIndicator.style.color = '#a0d2ff';
+            depthIndicator.style.textShadow = '0 0 5px rgba(160, 210, 255, 0.7)';
+        } else {
+            depthIndicator.style.color = 'white';
+            depthIndicator.style.textShadow = 'none';
+        }
+    }    
+    this.updateParticlesColor(depthColor, finalIntensity);
+}
+updateLightingBasedOnView(angleDegrees) {
+    const depthFactor = Math.min(1, this.depthLevel / this.maxDepth);    
+    const depthReduction = 1 - (depthFactor * 0.6);
+    let lightIntensity = 0.5 * depthReduction;
+    let lightColor = 0x5F9EA0;
+    if (angleDegrees <= 45) {
+        lightIntensity = 0.9 * depthReduction;
+        lightColor = this.interpolateColor(0x5F9EA0, 0x1E4D73, depthFactor);
+    } else if (angleDegrees <= 90) {
+        lightIntensity = 0.6 * depthReduction;
+        lightColor = this.interpolateColor(0x4682B4, 0x0A2F5B, depthFactor);
+    } else {
+        lightIntensity = 0.3 * (1 - depthFactor * 0.7);
+        lightColor = this.interpolateColor(0x1E4D73, 0x020C1C, depthFactor);
+    }    
+    this.scene.children.forEach(child => {
+        if (child instanceof THREE.AmbientLight) {
+            child.intensity = lightIntensity;
+            child.color = new THREE.Color(lightColor);
+        }
+    });    
+    const depthIndicator = document.getElementById('depth-indicator');
+    if (depthIndicator) {
+        if (lightIntensity < 0.3) {
+            depthIndicator.style.color = '#a0d2ff';
+            depthIndicator.style.textShadow = '0 0 5px rgba(160, 210, 255, 0.7)';
+        } else {
+            depthIndicator.style.color = 'white';
+            depthIndicator.style.textShadow = 'none';
+        }
+    }    
+    this.updateSurfaceElement(angleDegrees, lightIntensity, depthFactor);
+}
+updateSurfaceElement(angleDegrees, intensity, depthFactor) {
+    if (!this.surfaceElement) return;   
+    let surfaceOpacity = 0;
+    if (this.depthLevel === 0) {
+        if (angleDegrees <= 45) {
+            surfaceOpacity = 1 - (angleDegrees / 45);
+        } else if (angleDegrees <= 90) {
+            surfaceOpacity = 1 - ((angleDegrees - 45) / 45);
+        }
+    } else {
+        if (angleDegrees <= 45) {
+            surfaceOpacity = (1 - (angleDegrees / 45)) * (1 - depthFactor * 0.6);
+        } else if (angleDegrees <= 90) {
+            surfaceOpacity = (1 - ((angleDegrees - 45) / 45)) * (1 - depthFactor * 0.8);
+        }
+    }    
+    this.surfaceElement.style.opacity = surfaceOpacity;
+    this.updateSurfaceGradient(angleDegrees, surfaceOpacity, depthFactor);    
+    const sunRaysElement = document.getElementById('sun-rays');
+    if (sunRaysElement) {
+        sunRaysElement.style.opacity = this.depthLevel === 0 ? 
+            surfaceOpacity * 0.9 : 
+            surfaceOpacity * 0.7 * (1 - depthFactor);
+    }
+}
+updateSurfaceGradient(angleDegrees, opacity, depthFactor) {
+    if (!this.surfaceElement) return;   
+   const surfaceColors = [
+        ['rgba(117, 221, 255, ', 'rgba(97, 201, 235, ', 'rgba(77, 181, 215, '],
+        ['rgba(51, 202, 255, ', 'rgba(41, 182, 235, ', 'rgba(31, 162, 215, '],
+        ['rgba(36, 196, 255, ', 'rgba(26, 176, 235, ', 'rgba(16, 156, 215, '],
+        ['rgba(23, 191, 255, ', 'rgba(13, 171, 235, ', 'rgba(3, 151, 215, '],
+        ['rgba(0, 182, 255, ', 'rgba(0, 162, 235, ', 'rgba(0, 142, 215, '],
+        ['rgba(0, 150, 209, ', 'rgba(0, 130, 189, ', 'rgba(0, 110, 169, '],
+        ['rgba(0, 117, 163, ', 'rgba(0, 97, 143, ', 'rgba(0, 77, 123, '],
+        ['rgba(0, 84, 117, ', 'rgba(0, 64, 97, ', 'rgba(0, 44, 77, '],
+        ['rgba(0, 51, 71, ', 'rgba(0, 31, 51, ', 'rgba(0, 11, 31, '],
+        ['rgba(0, 18, 26, ', 'rgba(0, 8, 16, ', 'rgba(0, 0, 6, ']
+    ];    
+    const depthLevelIndex = Math.min(this.depthLevel, surfaceColors.length - 1);
+    const colors = surfaceColors[depthLevelIndex];        
+    let gradientStops = '';    
+    const transitionIntensity = Math.min(1, this.depthLevel / 5);    
+    if (angleDegrees <= 45) {
+        gradientStops = `
+            ${colors[0]}${opacity * (0.9 * transitionIntensity)}),
+            ${colors[1]}${opacity * (0.7 * transitionIntensity)}),
+            ${colors[2]}${opacity * (0.5 * transitionIntensity)}),
+            transparent
+        `;
+    } else if (angleDegrees <= 90) {
+        const progress = (angleDegrees - 45) / 45;
+        gradientStops = `
+            ${colors[0]}${opacity * ((0.9 - progress * 0.4) * transitionIntensity)}),
+            ${colors[1]}${opacity * ((0.7 - progress * 0.4) * transitionIntensity)}),
+            ${colors[2]}${opacity * ((0.5 - progress * 0.4) * transitionIntensity)}),
+            transparent
+        `;
+    } else {
+        gradientStops = 'transparent';
+    }    
+    this.surfaceElement.style.background = `linear-gradient(to bottom, ${gradientStops})`;
+}
+interpolateColor(color1, color2, factor) {
+    const r1 = (color1 >> 16) & 0xff;
+    const g1 = (color1 >> 8) & 0xff;
+    const b1 = color1 & 0xff;   
+    const r2 = (color2 >> 16) & 0xff;
+    const g2 = (color2 >> 8) & 0xff;
+    const b2 = color2 & 0xff;
+    const r = Math.round(r1 + (r2 - r1) * factor);
+    const g = Math.round(g1 + (g2 - g1) * factor);
+    const b = Math.round(b1 + (b2 - b1) * factor);
+    return (r << 16) | (g << 8) | b;
+}
+updateParticles() {
+    this.particles.children.forEach(particle => {
+        particle.position.y += particle.userData.speed * 0.02;        
+        if (particle.position.y > -2) {
+            particle.position.y = Math.random() * -10 - 5;
+            particle.position.x = Math.random() * 100 - 50;
+            particle.position.z = Math.random() * 100 - 50;
+        }        
+        particle.position.x += Math.sin(Date.now() * 0.001 + particle.userData.amplitude) * 0.01;
+        particle.position.z += Math.cos(Date.now() * 0.001 + particle.userData.amplitude) * 0.01;
+    });
+}
+createBubbleClusters(count, color, opacity, minSize, maxSize, minDistance, maxDistance) {
+    const clusterGroup = new THREE.Group();
+    clusterGroup.userData = { parallaxFactor: 0.08, isBubbleClusters: true };   
+    for (let i = 0; i < count; i++) {
+        const centerX = (Math.random() - 0.5) * 80;
+        const centerY = -20 + Math.random() * 20;
+        const centerZ = (Math.random() - 0.5) * 80;        
+        const bubbleCount = 5 + Math.floor(Math.random() * 10);        
+        for (let j = 0; j < bubbleCount; j++) {
+            const size = minSize + Math.random() * (maxSize - minSize);
+            const geometry = new THREE.SphereGeometry(size * 0.01, 10, 10);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: color, 
+                transparent: true, 
+                opacity: opacity * (0.7 + Math.random() * 0.3),
+                blending: THREE.AdditiveBlending
+            });
+            const bubble = new THREE.Mesh(geometry, material);
+            const radius = 3 + Math.random() * 7;
+            const angle = Math.random() * Math.PI * 2;
+            const height = Math.random() * 5;            
+            bubble.position.set(
+                centerX + Math.cos(angle) * radius,
+                centerY + height,
+                centerZ + Math.sin(angle) * radius
+            );
+            bubble.userData = {
+                center: new THREE.Vector3(centerX, centerY, centerZ),
+                radius: radius,
+                angle: angle,
+                rotationSpeed: (Math.random() - 0.5) * 0.015,
+                orbitSpeed: 0.2 + Math.random() * 0.3,
+                floatSpeed: 0.1 + Math.random() * 0.2,
+                size: size
+            };
+            clusterGroup.add(bubble);
+        }
+    }
+    this.backgroundLayers.add(clusterGroup);
+}
+createFloatingBubbles(count, color, opacity, minSize, maxSize, minDistance, maxDistance) {
+    const floatingBubbleGroup = new THREE.Group();
+    floatingBubbleGroup.userData = { parallaxFactor: 0.1, isFloatingBubbles: true };   
+    for (let i = 0; i < count; i++) {
+        const size = minSize + Math.random() * (maxSize - minSize);
+        const geometry = new THREE.SphereGeometry(size * 0.01, 16, 16);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: color, 
+            transparent: true, 
+            opacity: opacity,
+            blending: THREE.AdditiveBlending
+        });
+        const bubble = new THREE.Mesh(geometry, material);
+        const x = (Math.random() - 0.5) * 100;
+        const y = -30 + Math.random() * 15;
+        const z = (Math.random() - 0.5) * 100;        
+        bubble.position.set(x, y, z);
+        bubble.userData = {
+            originalY: y,
+            riseSpeed: 0.05 + Math.random() * 0.1,
+            rotationSpeed: (Math.random() - 0.5) * 0.01,
+            size: size,
+            maxHeight: -5 + Math.random() * 10,
+            resetY: -30 - Math.random() * 10,
+            wobble: {
+                x: (Math.random() - 0.5) * 0.5,
+                z: (Math.random() - 0.5) * 0.5,
+                speed: 0.5 + Math.random() * 1.0
+            }
+        };
+        floatingBubbleGroup.add(bubble);
+    }
+    this.backgroundLayers.add(floatingBubbleGroup);
+}
+animateClickRotation(mesh) {
+    const originalRotation = mesh.rotation.clone();
+    const targetRotation = new THREE.Euler(
+        originalRotation.x + Math.PI * 0.5,
+        originalRotation.y + Math.PI * 0.5,
+        originalRotation.z
+    );   
+    let progress = 0;
+    const duration = 500;
+    const startTime = Date.now();
+    const animate = () => {
+        const elapsed = Date.now() - startTime;
+        progress = Math.min(elapsed / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        mesh.rotation.x = originalRotation.x + (targetRotation.x - originalRotation.x) * easeProgress;
+        mesh.rotation.y = originalRotation.y + (targetRotation.y - originalRotation.y) * easeProgress;
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    };
+    animate();
+}      
+            createLights() {
+                const ambientLight = new THREE.AmbientLight(0x5555aa, 0.4);
+                this.scene.add(ambientLight);                
+                const directionalLight = new THREE.DirectionalLight(0xaaaaff, 0.6);
+                directionalLight.position.set(10, 20, 10);
+                this.scene.add(directionalLight);
+            }            
+            createSea() {
+    const seaGeometry = new THREE.PlaneGeometry(200, 200, 50, 50);    
+    const positions = seaGeometry.attributes.position.array;
+    for (let i = 0; i < positions.length; i += 3) {
+        const x = positions[i];
+        const z = positions[i + 2];
+        positions[i + 1] = Math.sin(x * 0.1) * Math.cos(z * 0.1) * 0.5;
+    }
+    seaGeometry.attributes.position.needsUpdate = true;
+    seaGeometry.computeVertexNormals();    
+    const seaColor = 0x0077be;
+    const seaMaterial = new THREE.MeshStandardMaterial({ 
+        color: seaColor,
+        transparent: true,
+        opacity: 0.9,
+        roughness: 0.8,
+        metalness: 0.2
+    });
+    this.sea = new THREE.Mesh(seaGeometry, seaMaterial);
+    this.sea.rotation.x = -Math.PI / 2;
+    this.sea.position.y = -2;
+    this.scene.add(this.sea);
+            const depthColors = [
+        0x75DDFF,
+        0x55CAFF,
+        0x44C4FF,
+        0x327eea, 
+        0x0055ce,  
+        0x004cb7,
+        0x003989,  
+        0x00265b, 
+        0x00132d,  
+        0x000000 
+            ];
+            this.sea = new THREE.Mesh(seaGeometry, seaMaterial);
+            this.sea.rotation.x = -Math.PI / 2;
+            this.sea.position.y = -2;
+            this.scene.add(this.sea);    
+                this.particles = new THREE.Group();
+                this.scene.add(this.particles);                
+                const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+                const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x88ffff, transparent: true, opacity: 0.6 });
+                for (let i = 0; i < 100; i++) {
+                    const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                    particle.position.set(
+                        Math.random() * 100 - 50,
+                        Math.random() * -10 - 5,
+                        Math.random() * 100 - 50
+                    );
+                    particle.userData = {
+                        speed: Math.random() * 0.9 + 0.05,
+                        amplitude: Math.random() * 0.5 + 0.2
+                    };
+                    this.particles.add(particle);
+                }
+            }
+async connectToServer() {
+    document.getElementById('status-message').style.display = 'block';
+    document.getElementById('depth-indicator').style.display = 'none';
+    document.getElementById('path-display').style.display = 'none';
+    document.getElementById('back-button').style.display = 'none';
+    document.getElementById('controls-help').style.display = 'none';
+    document.getElementById('error-message').style.display = 'none';
+    try {
+        const response = await fetch(`${this.apiBase}/api/files`);
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        this.loadingText.setText('Connected');        
+        await new Promise(resolve => setTimeout(resolve, 800));
+        document.getElementById('depth-indicator').style.display = 'block';
+        document.getElementById('path-display').style.display = 'block';
+        document.getElementById('current-path').textContent = 
+            data.current_path === '' || data.current_path === '/' ? 'Portfolio' : data.current_path;        
+        this.depthLevel = 0;
+        this.currentPath = '';
+        this.pathHistory = [];
+        this.clearFileObjects();
+        this.createFileObjects(data.items || []);
+        this.animate();
+        setTimeout(() => {
+            if (this.autoFocus && this.depthLevel === 0 && this.fileObjects && this.fileObjects.children.length > 0) {
+                if (!this.autoFocus.hasFocused) {
+                    this.autoFocus.checkAndFocus();
+                }
+            } else {
+                document.getElementById('status-message').style.display = 'none';
+            }
+        }, 1000);
+    } catch (error) {
+        console.error('Error connecting to server:', error);
+        this.loadingText.setText('Connection failed. Retrying...');
+        setTimeout(() => {
+            document.getElementById('status-message').style.display = 'none';
+            this.showError("Could not connect to server: " + error.message);
+            this.loadingText.complete();
+        }, 1500);
+    }
+}
+createFileObjects(items) {
+    this.clearFileObjects();    
+    if (!items || items.length === 0) {
+        this.showError("No files found in the directory.");
+        return;
+    }
+    const radius = 10;
+    const angleStep = (Math.PI * 2) / items.length;
+    items.forEach((item, index) => {
+        const angle = index * angleStep;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const y = Math.random() * 5 - 2.5;
+        this.createFileObject(item, x, y, z);
+    });
+    const backButton = document.getElementById('back-button');
+    backButton.style.display = (this.currentPath !== '' || this.pathHistory.length > 0) ? 'flex' : 'none';    
+    const depthText = this.depthLevel === 0 ? "Surface" : 
+                     this.depthLevel === 1 ? "Shallow" :
+                     this.depthLevel === 2 ? "Sub Shallow" :
+                     this.depthLevel === 3 ? "Medium" : 
+                     this.depthLevel === 4 ? "Deep Medium" :
+                     this.depthLevel === 5 ? "Deep" :
+                     this.depthLevel === 6 ? "Very Deep" :
+                     this.depthLevel === 7 ? "Pre abyss" :
+                     this.depthLevel === 8 ? "Abyss" : "Beyond Abyss";
+    document.getElementById('depth-indicator').textContent = `Depth: ${depthText}`;
+}
+clearFileObjects() {
+    while (this.fileObjects.children.length > 0) {
+        const child = this.fileObjects.children[0];        
+        if (child.userData) {
+            for (const key in child.userData) {
+                if (child.userData[key] && typeof child.userData[key].dispose === 'function') {
+                    child.userData[key].dispose();
+                }
+            }
+        }        
+        this.fileObjects.remove(child);
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+            if (Array.isArray(child.material)) {
+                child.material.forEach(material => material.dispose());
+            } else {
+                child.material.dispose();
+            }
+        }
+    }    
+    this.clearNameLabels();
+}
+hideLoadingWindow() {
+    const loadingWindow = document.getElementById('claymation-loading-window');
+    if (loadingWindow) {
+        loadingWindow.style.display = 'none';
+    }
+}
+createFileObject(item, x, y, z) {
+   let geometry, material;
+    const distort = () => (Math.random() * 0.2) - 0.1;
+    if (item.is_dir) {
+        geometry = new THREE.BoxGeometry(
+            1.5 + distort(), 
+            1 + distort(), 
+            1 + distort()
+        );        
+       let folderColor = 0xffa500;
+        const startingNumberMatch = item.name.match(/^(\d+)/);
+        if (startingNumberMatch) {
+            const numberValue = parseInt(startingNumberMatch[1]);            
+             if (numberValue >= 10) {
+                folderColor = 0x990000;
+            } else if (numberValue >= 1) {
+                const intensity = numberValue / 9;
+                folderColor = this.interpolateColor(0xffa500, 0xff0000, intensity);
+            }
+        }
+        material = new THREE.MeshStandardMaterial({ 
+            color: folderColor,
+            roughness: 0.9,
+            metalness: 0.05,
+            transparent: false,
+            opacity: 1.0
+        });
+    } else {
+       geometry = new THREE.BoxGeometry(
+            1 + distort(), 
+            0.2 + distort(), 
+            1.2 + distort()
+        );
+        material = new THREE.MeshStandardMaterial({ 
+            color: getColorForExtension(item.name),
+            roughness: 0.8,
+            metalness: 0.2,
+            transparent: false,
+            opacity: 1.0
+        });
+    }
+    const mesh = new THREE.Mesh(geometry, material);
+ mesh.position.set(x, y, z);
+mesh.rotation.set(
+    Math.random() * Math.PI,      
+    Math.random() * Math.PI,      
+    Math.random() * Math.PI * 0.5 
+);
+const scaleVariation = 0.2;
+const randomScale = 1 + (Math.random() - 0.5) * scaleVariation;
+mesh.scale.set(randomScale, randomScale, randomScale);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData = {
+        itemData: item,
+        clickable: true
+    };
+    this.fileObjects.add(mesh);
+    mesh.userData = mesh.userData || {};    
+    mesh.userData.targetPosition = mesh.position.clone();
+    mesh.userData.targetRotation = mesh.rotation.clone();
+    mesh.userData.originalPosition = mesh.position.clone();    
+mesh.userData.floatPhase = Math.random() * Math.PI * 2;
+mesh.userData.floatSpeed = 0.002 + Math.random() * 0.003;
+mesh.userData.maxDrift = 0.8 + Math.random() * 1.4;
+mesh.userData.initialDelay = Date.now() + Math.random() * 2000;
+mesh.userData.floatAmplitude = 0.3 + Math.random() * 0.4;
+mesh.userData.floatPattern = Math.floor(Math.random() * 4);
+mesh.userData.floatDirection = new THREE.Vector3(
+    (Math.random() - 0.5) * 2,
+    (Math.random() - 0.3) * 1.5, 
+    (Math.random() - 0.5) * 2 
+).normalize(); 
+mesh.userData.oscillationType = Math.random() > 0.5 ? 'sine' : 'cosine';
+mesh.userData.verticalBias = 0.2 + Math.random() * 0.3;
+mesh.userData.rotationSpeed = new THREE.Vector3(
+    (Math.random() - 0.5) * 0.001,
+    (Math.random() - 0.5) * 0.002,  
+    (Math.random() - 0.5) * 0.0015 
+);
+    mesh.userData.itemData = item;
+    mesh.userData.clickable = true;
+    this.fileObjects.add(mesh);
+    const label = document.createElement('div');
+    label.className = 'name-label';
+    const icon = document.createElement('span');
+    icon.className = 'file-icon';
+    icon.textContent = getFileIcon(item.name, item.is_dir);
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = item.name;
+    label.appendChild(icon);
+    label.appendChild(nameSpan);
+    document.body.appendChild(label);
+    this.nameLabels.push({
+        element: label,
+        mesh: mesh
+    });
+}
+interpolateColor(color1, color2, factor) {
+    const r1 = (color1 >> 16) & 0xff;
+    const g1 = (color1 >> 8) & 0xff;
+    const b1 = color1 & 0xff;   
+    const r2 = (color2 >> 16) & 0xff;
+    const g2 = (color2 >> 8) & 0xff;
+    const b2 = color2 & 0xff;
+    const r = Math.round(r1 + (r2 - r1) * factor);
+    const g = Math.round(g1 + (g2 - g1) * factor);
+    const b = Math.round(b1 + (b2 - b1) * factor);
+    return (r << 16) | (g << 8) | b;
+}
+updateNameLabels() {
+    this.nameLabels.forEach(labelData => {
+        const screenPos = this.convert3DToScreen(
+            labelData.mesh.position.x, 
+            labelData.mesh.position.y + 2, 
+            labelData.mesh.position.z
+        );       
+        labelData.element.style.left = `${screenPos.x}px`;
+        labelData.element.style.top = `${screenPos.y}px`;
+        const distance = this.camera.position.distanceTo(labelData.mesh.position);
+        const scale = Math.max(0.7, 1.5 - distance * 0.05);
+        labelData.element.style.transform = `translate(-50%, -100%) scale(${scale})`;
+        labelData.element.style.opacity = Math.max(0.3, 1 - distance * 0.05);
+        const raycaster = new THREE.Raycaster();
+        const cameraDirection = new THREE.Vector3();
+        this.camera.getWorldDirection(cameraDirection);
+        raycaster.set(this.camera.position, cameraDirection);
+        const intersects = raycaster.intersectObject(labelData.mesh);
+        if (intersects.length > 0) {
+            const distanceToObject = this.camera.position.distanceTo(intersects[0].point);
+            const distanceToLabel = this.camera.position.distanceTo(labelData.mesh.position);
+            if (distanceToObject < distanceToLabel - 0.5) {
+                labelData.element.style.visibility = 'hidden';
+            } else {
+                labelData.element.style.visibility = 'visible';
+            }
+        } else {
+            labelData.element.style.visibility = 'visible';
+        }
+    });
+}
+clearNameLabels() {
+    this.nameLabels.forEach(labelData => {
+        if (labelData.element && labelData.element.parentNode) {
+            labelData.element.parentNode.removeChild(labelData.element);
+        }
+    });    
+    this.nameLabels = [];
+}
+            convert3DToScreen(x, y, z) {
+                const vector = new THREE.Vector3(x, y, z);
+                vector.project(this.camera);               
+                return {
+                    x: (vector.x * 0.5 + 0.5) * window.innerWidth,
+                    y: (-(vector.y * 0.5 + 0.5) + 1) * window.innerHeight
+                };
+            }
+async showHolographicInfo(item, mesh) {
+    this.hideHologram();    
+    this.showLoadingAnimation(mesh);    
+    this.currentHologramMesh = mesh;
+    this.hologramMeshPosition = new THREE.Vector3();
+    mesh.getWorldPosition(this.hologramMeshPosition);    
+    const hologram = document.getElementById('holographic-display');
+    const title = document.getElementById('hologram-title');
+    const nameEl = document.getElementById('info-name');
+    const typeEl = document.getElementById('info-type');
+    const pathEl = document.getElementById('info-path');
+    const descriptionEl = document.getElementById('info-description');
+    const folderContents = document.getElementById('folder-contents');
+    const folderItems = document.getElementById('folder-items');    
+    descriptionEl.innerHTML = 'Loading...';
+    folderContents.style.display = 'none';
+    const existingMedia = document.getElementById('file-media-container');
+    if (existingMedia) existingMedia.remove();    
+    title.textContent = item.is_dir ? 'Folder Information' : 'File Information';
+    nameEl.textContent = item.name;
+    typeEl.textContent = item.is_dir ? 'Folder' : getFileType(item.name);    
+    const formattedPath = this.formatPathForDisplay(item.path || '/');
+    pathEl.textContent = formattedPath;    
+    folderContents.style.display = 'none';    
+    const existingButton = document.getElementById('view-full-button');
+    if (existingButton) existingButton.remove();    
+    const existingViewer = document.getElementById('code-viewer');
+    if (existingViewer) existingViewer.remove();    
+    try {
+        if (item.is_dir) {
+            try {
+                const response = await fetch(`${this.apiBase}/api/files/${encodeURIComponent(item.path)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    folderItems.innerHTML = '';                    
+                    if (data.items && data.items.length > 0) {
+                        data.items.forEach(childItem => {
+                            const li = document.createElement('li');
+                            li.className = childItem.is_dir ? 'folder' : 'file';                            
+                            const icon = document.createElement('span');
+                            icon.className = 'file-icon';
+                            icon.textContent = getFileIcon(childItem.name, childItem.is_dir);
+                            const nameSpan = document.createElement('span');
+                            nameSpan.textContent = childItem.name;
+                            li.appendChild(icon);
+                            li.appendChild(nameSpan);
+                            folderItems.appendChild(li);
+                        });
+                        folderContents.style.display = 'block';
+                        descriptionEl.textContent = `Contains ${data.items.length} items`;
+                    } else {
+                        descriptionEl.textContent = 'Empty folder';
+                    }
+                } else {
+                    descriptionEl.textContent = 'Unable to load folder contents';
+                }
+            } catch (error) {
+                console.error('Error loading folder contents:', error);
+                descriptionEl.textContent = 'Error loading folder contents';
+            }
+        } else {
+            const extension = item.name.split('.').pop().toLowerCase();            
+            if (['docx', 'pptx', 'xlsx'].includes(extension)) {
+                await this.handleOfficeDocument(item, descriptionEl);
+            } else {
+                await this.handleRegularFile(item, descriptionEl);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading file content:', error);
+        descriptionEl.textContent = 'Error loading file content';        
+        const fallbackDesc = document.createElement('div');
+        fallbackDesc.textContent = generateDescription(item.name, false);
+        descriptionEl.appendChild(fallbackDesc);
+    } finally {
+        this.removeLoadingAnimation();
+    }
+    this.addDownloadButton(item, descriptionEl);    
+    hologram.style.display = 'block';
+    this.hologramVisible = true;
+this.preventContentCopying();
+    this.updateHologramPosition();    
+    this.setupHologramBehavior();
+}
+async handleOfficeDocument(item, descriptionEl) {
+    descriptionEl.innerHTML = '';    
+    const extension = item.name.split('.').pop().toLowerCase();
+    const fileType = getFileType(item.name);
+    const header = document.createElement('div');
+    header.style.marginBottom = '15px';
+    header.style.paddingBottom = '10px';
+    header.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';    
+    const typeInfo = document.createElement('div');
+    typeInfo.textContent = `${fileType} - Office Document`;
+    typeInfo.style.fontSize = '14px';
+    typeInfo.style.opacity = '0.8';
+    typeInfo.style.marginBottom = '5px';
+    header.appendChild(typeInfo);
+    descriptionEl.appendChild(header);
+    const descText = document.createElement('div');
+    descText.textContent = generateDescription(item.name, false);
+    descText.style.marginBottom = '15px';
+    descText.style.padding = '10px';
+    descText.style.backgroundColor = 'rgba(0, 30, 60, 0.5)';
+    descText.style.borderRadius = '5px';
+    descriptionEl.appendChild(descText);    
+    const viewButton = document.createElement('button');
+    viewButton.id = 'view-office-content';
+    viewButton.textContent = 'Extract Text Content';
+    viewButton.style.marginTop = '10px';
+    viewButton.style.padding = '8px 15px';
+    viewButton.style.backgroundColor = 'rgba(0, 119, 190, 0.3)';
+    viewButton.style.color = 'white';
+    viewButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    viewButton.style.borderRadius = '4px';
+    viewButton.style.cursor = 'pointer';
+    viewButton.style.width = '100%';    
+    viewButton.addEventListener('click', async () => {
+        viewButton.textContent = 'Processing document...';
+        viewButton.disabled = true;
+        try {
+            const response = await fetch(`${this.apiBase}/api/raw-file/${encodeURIComponent(item.path)}`);            
+            if (response.ok) {
+                const blob = await response.blob();
+                await this.convertOfficeDocument(blob, extension, item.name, descriptionEl);
+            } else {
+                throw new Error('Failed to fetch document');
+            }
+        } catch (error) {
+            console.error('Error converting document:', error);            
+            const errorMsg = document.createElement('div');
+            errorMsg.style.color = '#ff6b6b';
+            errorMsg.style.marginTop = '10px';
+            errorMsg.textContent = 'Could not process document. Please download to view.';
+            descriptionEl.appendChild(errorMsg);
+        } finally {
+            viewButton.textContent = 'Extract Text Content';
+            viewButton.disabled = false;
+        }
+    });
+    descriptionEl.appendChild(viewButton);
+}
+    async convertOfficeDocument(blob, extension, filename, descriptionEl) {
+        try {
+            const loadingMsg = document.createElement('div');
+            loadingMsg.textContent = 'Extracting text content...';
+            loadingMsg.style.color = '#88ffff';
+            descriptionEl.appendChild(loadingMsg);
+            const textContent = await this.extractTextFromOfficeFile(blob, extension);            
+            descriptionEl.removeChild(loadingMsg);            
+            if (textContent) {
+                const textContainer = document.createElement('div');
+                textContainer.style.backgroundColor = 'rgba(0, 20, 40, 0.7)';
+                textContainer.style.padding = '10px';
+                textContainer.style.borderRadius = '5px';
+                textContainer.style.maxHeight = '300px';
+                textContainer.style.overflowY = 'auto';
+                textContainer.style.fontFamily = 'monospace';
+                textContainer.style.fontSize = '12px';
+                textContainer.style.whiteSpace = 'pre-wrap';
+                textContainer.textContent = textContent;                
+                descriptionEl.appendChild(textContainer);
+                const note = document.createElement('div');
+                note.style.marginTop = '10px';
+                note.style.fontSize = '11px';
+                note.style.opacity = '0.7';
+                note.textContent = 'Note: This is a text-only preview. Formatting and media are not displayed.';
+                descriptionEl.appendChild(note);
+            } else {
+                this.showOfficeConversionInfo(extension, filename, blob.size);
+            }
+        } catch (error) {
+            console.error('Error converting office document:', error);
+            if (descriptionEl.contains(loadingMsg)) {
+                descriptionEl.removeChild(loadingMsg);
+            }            
+            if (error.message.includes('File too large to extract')) {
+                const errorMsg = document.createElement('div');
+                errorMsg.style.color = '#ff6b6b';
+                errorMsg.style.marginTop = '10px';
+                errorMsg.style.padding = '10px';
+                errorMsg.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+                errorMsg.style.borderRadius = '5px';
+                errorMsg.innerHTML = `
+                    <strong>File too large to extract</strong><br>
+                    Please download the file to view its contents.
+                `;
+                descriptionEl.appendChild(errorMsg);
+            } else {
+                this.showOfficeConversionInfo(extension, filename, blob.size);
+            }
+        }
+    }
+showOfficeConversionInfo(extension, filename, size) {
+    const modal = document.createElement('div');
+    modal.id = 'office-conversion-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.width = '80%';
+    modal.style.maxWidth = '500px';
+    modal.style.backgroundColor = 'rgba(0, 20, 40, 0.95)';
+    modal.style.border = '2px solid rgba(0, 119, 190, 0.7)';
+    modal.style.borderRadius = '10px';
+    modal.style.zIndex = '1001';
+    modal.style.boxShadow = '0 0 30px rgba(0, 119, 190, 0.5)';
+    modal.style.overflow = 'hidden';
+    modal.style.padding = '20px';    
+    const header = document.createElement('h3');
+    header.textContent = 'Office Document Conversion';
+    header.style.marginTop = '0';
+    header.style.color = 'white';
+    header.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';
+    header.style.paddingBottom = '10px';    
+    const content = document.createElement('div');
+    content.style.margin = '15px 0';    
+    const message = document.createElement('p');
+    message.textContent = `For security and performance reasons, ${extension.toUpperCase()} files cannot be directly previewed in the browser.`;
+    message.style.marginBottom = '15px';
+    const options = document.createElement('div');
+    options.innerHTML = `
+        <p>You can:</p>
+        <ul style="margin-left: 20px; margin-bottom: 15px;">
+            <li>Download the file to view it locally</li>
+            <li>Convert it to PDF for browser viewing</li>
+            <li>Use online conversion tools</li>
+        </ul>
+        <p>File: ${filename} (${this.formatFileSize(size)})</p>
+    `;
+    content.appendChild(message);
+    content.appendChild(options);
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'OK';
+    closeButton.style.padding = '8px 20px';
+    closeButton.style.backgroundColor = 'rgba(0, 119, 190, 0.3)';
+    closeButton.style.color = 'white';
+    closeButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    closeButton.style.borderRadius = '4px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.float = 'right';    
+    closeButton.addEventListener('click', () => {
+        modal.remove();
+    });
+    modal.appendChild(header);
+    modal.appendChild(content);
+    modal.appendChild(closeButton);    
+    document.body.appendChild(modal);    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+async handleRegularFile(item, descriptionEl) {
+    try {
+        const response = await fetch(`${this.apiBase}/api/file-content-enhanced/${encodeURIComponent(item.path)}`);       
+        if (response.ok) {
+            const data = await response.json();
+            descriptionEl.textContent = '';            
+            if (data.type === 'text') {
+                const textContent = document.createElement('div');
+                textContent.style.backgroundColor = 'rgba(0, 20, 40, 0.7)';
+                textContent.style.padding = '10px';
+                textContent.style.borderRadius = '5px';
+                textContent.style.maxHeight = '200px';
+                textContent.style.overflowY = 'auto';
+                textContent.style.fontFamily = 'monospace';
+                textContent.style.fontSize = '12px';
+                textContent.style.whiteSpace = 'pre-wrap';
+                textContent.textContent = data.content;
+                descriptionEl.appendChild(textContent);                
+                if (data.content.length >= 2000) {
+                    const viewFullButton = document.createElement('button');
+                    viewFullButton.id = 'view-full-button';
+                    viewFullButton.textContent = 'View Full Content';
+                    viewFullButton.style.marginTop = '10px';
+                    viewFullButton.addEventListener('click', () => {
+                        this.showCodeViewer(data.content, item.name);
+                    });
+                    descriptionEl.appendChild(viewFullButton);
+                }
+            } 
+            else if (data.type === 'image') {
+                const imgContainer = document.createElement('div');
+                imgContainer.style.textAlign = 'center';
+                imgContainer.style.margin = '10px 0';
+                const img = document.createElement('img');
+                img.src = data.content;
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '300px';
+                img.style.borderRadius = '5px';
+                img.alt = item.name;
+                imgContainer.appendChild(img);
+                descriptionEl.appendChild(imgContainer);
+            }
+            else if (data.type === 'audio') {
+                const audioContainer = document.createElement('div');
+                audioContainer.style.margin = '10px 0';
+                const audio = document.createElement('audio');
+                audio.controls = true;
+                audio.src = data.content;
+                audio.style.width = '100%';
+                audioContainer.appendChild(audio);
+                descriptionEl.appendChild(audioContainer);
+            }
+            else {
+                const fileInfo = document.createElement('div');
+                fileInfo.style.marginBottom = '15px';                
+                const fileType = document.createElement('div');
+                fileType.textContent = `File type: ${data.mimetype || 'Binary file'}`;
+                fileType.style.marginBottom = '5px';
+                const fileSize = document.createElement('div');
+                fileSize.textContent = `Size: ${this.formatFileSize(data.size)}`;
+                fileSize.style.marginBottom = '10px';
+                fileSize.style.opacity = '0.8';
+                fileInfo.appendChild(fileType);
+                fileInfo.appendChild(fileSize);
+                descriptionEl.appendChild(fileInfo);
+                const message = document.createElement('div');
+                message.style.padding = '10px';
+                message.style.backgroundColor = 'rgba(0, 30, 60, 0.5)';
+                message.style.borderRadius = '5px';
+                message.style.marginBottom = '15px';                
+                if (data.mimetype === 'application/pdf') {
+                    message.textContent = 'PDF documents cannot be previewed directly. Please download to view.';
+                } else if (data.mimetype.startsWith('video/')) {
+                    message.textContent = 'Video files cannot be previewed directly. Please download to view.';
+                } else {
+                    message.textContent = 'This file type cannot be previewed directly. Please download to view.';
+                }
+                descriptionEl.appendChild(message);
+            }
+            if (descriptionEl.children.length <= 2) {
+                const descText = document.createElement('div');
+                descText.textContent = generateDescription(item.name, false);
+                descText.style.marginBottom = '15px';
+                descText.style.padding = '10px';
+                descText.style.backgroundColor = 'rgba(0, 30, 60, 0.5)';
+                descText.style.borderRadius = '5px';
+                descriptionEl.appendChild(descText);
+            }
+        } else {
+            this.showDefaultDescription(item, descriptionEl);
+        }
+    } catch (error) {
+        console.error('Error loading file content:', error);
+        this.showDefaultDescription(item, descriptionEl);
+    }
+}
+    addDownloadButton(item, container) {
+    const downloadButton = document.createElement('button');
+    downloadButton.id = 'download-button';
+    downloadButton.textContent = 'Download File';
+    downloadButton.style.marginTop = '10px';
+    downloadButton.style.padding = '8px 15px';
+    downloadButton.style.backgroundColor = 'rgba(0, 119, 190, 0.3)';
+    downloadButton.style.color = 'white';
+    downloadButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    downloadButton.style.borderRadius = '4px';
+    downloadButton.style.cursor = 'pointer';
+    downloadButton.style.width = '100%';    
+    downloadButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        downloadButton.style.backgroundColor = '#ff4444';
+        downloadButton.style.color = 'white';
+        downloadButton.textContent = 'Enter code: ';        
+        const codeInput = document.createElement('input');
+        codeInput.type = 'password';
+        codeInput.style.marginLeft = '5px';
+        codeInput.style.padding = '2px';
+        codeInput.style.width = '60px';
+        codeInput.placeholder = 'psw';
+        downloadButton.innerHTML = '';
+        downloadButton.appendChild(document.createTextNode('Enter code: '));
+        downloadButton.appendChild(codeInput);
+        codeInput.focus();
+        const checkCode = (e) => {
+            if (e.key === 'Enter') {
+                if (codeInput.value === '123') {
+                    const fileUrl = `${this.apiBase}/api/raw-file/${encodeURIComponent(item.path)}`;
+                    const a = document.createElement('a');
+                    a.href = fileUrl;
+                    a.download = item.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    downloadButton.style.backgroundColor = '';
+                    downloadButton.style.color = '';
+                    downloadButton.textContent = 'Download File';
+                    downloadButton.innerHTML = 'Download File';
+                } else {
+                    codeInput.style.animation = 'shake 0.5s';
+                    setTimeout(() => {
+                        codeInput.style.animation = '';
+                        codeInput.value = '';
+                    }, 500);
+                }
+            } else if (e.key === 'Escape') {
+                downloadButton.style.backgroundColor = '';
+                downloadButton.style.color = '';
+                downloadButton.textContent = 'Download File';
+                downloadButton.innerHTML = 'Download File';
+                downloadButton.removeEventListener('keydown', checkCode);
+            }
+        };
+        codeInput.addEventListener('keydown', checkCode);
+        const cancelHandler = (e) => {
+            if (!downloadButton.contains(e.target)) {
+                downloadButton.style.backgroundColor = '';
+                downloadButton.style.color = '';
+                downloadButton.textContent = 'Download File';
+                downloadButton.innerHTML = 'Download File';
+                document.removeEventListener('click', cancelHandler);
+                codeInput.removeEventListener('keydown', checkCode);
+            }
+        };
+        setTimeout(() => {
+            document.addEventListener('click', cancelHandler);
+        }, 100);
+    });
+    container.appendChild(downloadButton);
+}
+setupHologramBehavior() {
+    this.hologramUpdateInterval = setInterval(() => {
+        if (this.hologramVisible && this.currentHologramMesh) {
+            this.updateHologramPosition();
+        }
+    }, 100);    
+    if (this.hologramTimeout) {
+        clearTimeout(this.hologramTimeout);
+    }    
+    this.hologramTimeout = setTimeout(() => {
+        if (this.hologramVisible) {
+            const distance = this.camera.position.distanceTo(this.hologramMeshPosition);
+            if (distance > 20) {
+                this.hideHologram();
+            } else {
+                this.hologramTimeout = setTimeout(() => {
+                    const newDistance = this.camera.position.distanceTo(this.hologramMeshPosition);
+                    if (newDistance > 20) {
+                        this.hideHologram();
+                    }
+                }, 2000);
+            }
+        }
+    }, 5000);
+}
+preventContentCopying() {
+    const hologram = document.getElementById('holographic-display');
+    if (!hologram) return;    
+    hologram.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });    
+    hologram.style.userSelect = 'none';
+    hologram.style.webkitUserSelect = 'none';
+    hologram.style.mozUserSelect = 'none';
+    hologram.style.msUserSelect = 'none';    
+    hologram.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        return false;
+    });    
+    hologram.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+            e.preventDefault();
+            return false;
+        }
+    });
+}
+updateHologramPosition() {
+    if (!this.hologramVisible || !this.currentHologramMesh) return;
+    const hologram = document.getElementById('holographic-display');   
+    this.currentHologramMesh.getWorldPosition(this.hologramMeshPosition);    
+    const hologramPosition = this.hologramMeshPosition.clone();
+    hologramPosition.y += 2.5;    
+    const vector = hologramPosition.clone();
+    vector.project(this.camera);    
+    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-(vector.y * 0.5 + 0.5) + 1) * window.innerHeight;
+    const hologramWidth = 350;
+    const hologramHeight = hologram.offsetHeight;    
+    const isOffScreen = (
+        x < 0 || 
+        x > window.innerWidth || 
+        y < 0 || 
+        y > window.innerHeight ||
+        vector.z > 1
+    );    
+    if (isOffScreen) {
+        hologram.style.visibility = 'hidden';        
+        const connector = document.querySelector('.hologram-connector');
+        const dot = document.querySelector('.connector-dot');        
+        if (connector) connector.style.visibility = 'hidden';
+        if (dot) dot.style.visibility = 'hidden';
+    } else {
+        hologram.style.visibility = 'visible';        
+        let finalX = x - hologramWidth / 2;
+        let finalY = y - hologramHeight - 20;
+        finalX = Math.max(10, Math.min(finalX, window.innerWidth - hologramWidth - 10));
+        finalY = Math.max(10, Math.min(finalY, window.innerHeight - hologramHeight - 10));        
+        hologram.style.left = `${finalX}px`;
+        hologram.style.top = `${finalY}px`;        
+        const distance = this.camera.position.distanceTo(hologramPosition);
+        const scale = Math.max(0.7, 1.5 - distance * 0.1);
+        const opacity = Math.max(0.3, 1 - distance * 0.07);        
+        hologram.style.transform = `scale(${scale})`;
+        hologram.style.opacity = opacity;
+        const connector = document.querySelector('.hologram-connector');
+        const dot = document.querySelector('.connector-dot');        
+        if (connector) connector.style.visibility = 'visible';
+        if (dot) dot.style.visibility = 'visible';
+        this.drawHologramConnector(this.hologramMeshPosition, finalX + hologramWidth / 2, finalY + hologramHeight);
+    }    
+    if (this.loadingAnimation) {
+        this.loadingAnimation.style.left = '50%';
+        this.loadingAnimation.style.top = '50%';
+        this.loadingAnimation.style.transform = 'translate(-50%, -50%)';
+    }
+}
+hideHologram() {
+    const hologram = document.getElementById('holographic-display');
+    if (hologram) {
+        hologram.style.display = 'none';
+    }   
+    this.hologramVisible = false;
+    this.currentHologramMesh = null;
+    this.hologramMeshPosition = null;
+    const connector = document.querySelector('.hologram-connector');
+    const dot = document.querySelector('.connector-dot');    
+    if (connector) document.body.removeChild(connector);
+    if (dot) document.body.removeChild(dot);
+    if (this.hologramUpdateInterval) {
+        clearInterval(this.hologramUpdateInterval);
+        this.hologramUpdateInterval = null;
+    }    
+    if (this.hologramTimeout) {
+        clearTimeout(this.hologramTimeout);
+        this.hologramTimeout = null;
+    }
+    this.removeLoadingAnimation();
+}
+isPointBehindCamera(point) {
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);    
+    const pointDirection = new THREE.Vector3().subVectors(point, this.camera.position).normalize();
+    return cameraDirection.dot(pointDirection) < 0;
+}
+async extractTextFromDOCX(blob) {
+    if (typeof mammoth !== 'undefined') {
+        const arrayBuffer = await blob.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return result.value;
+    } else {
+        return `DOCX Document (${this.formatFileSize(blob.size)})\n\nTo view full content, please download the file.`;
+    }
+}
+async extractTextFromPPTX(blob) {
+    return `PPTX Presentation (${this.formatFileSize(blob.size)})\n\nPresentation files cannot be previewed directly. Please download to view.`;
+}
+async extractTextFromXLSX(blob) {
+    return `XLSX Spreadsheet (${this.formatFileSize(blob.size)})\n\nSpreadsheet files cannot be previewed directly. Please download to view.`;
+}
+    async extractTextFromOfficeFile(blob, extension) {
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('File too large to extract')), 5000);
+        });        
+        try {
+            const extractionPromise = (async () => {
+                if (extension === 'docx') {
+                    return await this.extractTextFromDOCX(blob);
+                } else if (extension === 'pptx') {
+                    return await this.extractTextFromPPTX(blob);
+                } else if (extension === 'xlsx') {
+                    return await this.extractTextFromXLSX(blob);
+                }
+                return null;
+            })(); 
+            return await Promise.race([extractionPromise, timeoutPromise]);
+        } catch (error) {
+            if (error.message === 'File too large to extract') {
+                throw new Error('File too large to extract. Please download the file to view its contents.');
+            }
+            console.error('Error extracting text from office file:', error);
+            return null;
+        }
+    }
+isSpecialCharacterContent(content) {
+    if (!content || content.length === 0) return false;
+    let specialCharCount = 0;
+    const sampleSize = Math.min(content.length, 1000);    
+    for (let i = 0; i < sampleSize; i++) {
+        const charCode = content.charCodeAt(i);
+        if (charCode < 32 && charCode !== 9 && charCode !== 10 && charCode !== 13) {
+            specialCharCount++;
+        }
+        else if (charCode > 126 && charCode < 160) {
+            specialCharCount++;
+        }
+    }    
+    return (specialCharCount / sampleSize) > 0.3;
+}
+hasValidFileDescription(extension) {
+    const fileType = getFileType('test.' + extension);
+    return fileType !== (extension.toUpperCase() + ' File');
+}
+showDefaultDescription(item, descriptionElement) {
+    descriptionElement.textContent = '';
+    const defaultDescription = generateDescription(item.name, false);    
+    const descText = document.createElement('div');
+    descText.textContent = defaultDescription;
+    descText.style.marginBottom = '10px';
+    descriptionElement.appendChild(descText);
+    if (defaultDescription === "Try to download instead") {
+        const gifElement = document.createElement('img');
+        gifElement.src = 'images/gif.6.gif';
+        gifElement.alt = 'Unknown file type';
+        gifElement.style.maxWidth = '100px';
+        gifElement.style.marginTop = '10px';
+        gifElement.style.borderRadius = '5px';
+        descriptionElement.appendChild(gifElement);
+    }    
+}
+formatPathForDisplay(path) {
+    if (!path || path === '' || path === '/') return '/';   
+    const parts = path.split('/').filter(part => part !== '');
+    let formattedPath = '';
+    for (let i = 0; i < parts.length; i++) {
+        if (i > 0 && i % 2 === 0) {
+            formattedPath += '/\n';
+        } else if (i > 0) {
+            formattedPath += '/';
+        }
+        formattedPath += parts[i];
+    }    
+    return formattedPath;
+}
+showCodeViewer(content, filename) {
+    const existingViewer = document.getElementById('code-viewer');
+    if (existingViewer) {
+        existingViewer.remove();
+    }    
+    const codeViewer = document.createElement('div');
+    codeViewer.id = 'code-viewer';
+    codeViewer.style.position = 'fixed';
+    codeViewer.style.top = '50%';
+    codeViewer.style.left = '50%';
+    codeViewer.style.transform = 'translate(-50%, -50%)';
+    codeViewer.style.width = '80%';
+    codeViewer.style.height = '80%';
+    codeViewer.style.backgroundColor = 'rgba(0, 20, 40, 0.95)';
+    codeViewer.style.border = '2px solid rgba(0, 119, 190, 0.7)';
+    codeViewer.style.borderRadius = '10px';
+    codeViewer.style.zIndex = '1000';
+    codeViewer.style.boxShadow = '0 0 30px rgba(0, 119, 190, 0.5)';
+    codeViewer.style.overflow = 'hidden';
+    codeViewer.style.display = 'flex';
+    codeViewer.style.flexDirection = 'column';    
+    const header = document.createElement('div');
+    header.style.padding = '15px';
+    header.style.backgroundColor = 'rgba(0, 30, 60, 0.9)';
+    header.style.borderBottom = '1px solid rgba(0, 119, 190, 0.5)';
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';    
+    const title = document.createElement('h3');
+    title.textContent = filename;
+    title.style.margin = '0';
+    title.style.color = 'white';
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '×';
+    closeButton.style.background = 'none';
+    closeButton.style.border = 'none';
+    closeButton.style.color = 'white';
+    closeButton.style.fontSize = '20px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.padding = '0';
+    closeButton.style.width = '30px';
+    closeButton.style.height = '30px';
+    closeButton.style.borderRadius = '50%';
+    closeButton.addEventListener('mouseover', () => {
+        closeButton.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+    });
+    closeButton.addEventListener('mouseout', () => {
+        closeButton.style.backgroundColor = 'transparent';
+    });
+    closeButton.addEventListener('click', () => {
+        codeViewer.remove();
+    });
+    header.appendChild(title);
+    header.appendChild(closeButton);
+    const codeContent = document.createElement('textarea');
+    codeContent.value = content;
+    codeContent.style.flex = '1';
+    codeContent.style.backgroundColor = 'rgba(0, 10, 20, 0.9)';
+    codeContent.style.color = '#e0e0e0';
+    codeContent.style.border = 'none';
+    codeContent.style.padding = '15px';
+    codeContent.style.fontFamily = 'monospace';
+    codeContent.style.fontSize = '14px';
+    codeContent.style.resize = 'none';
+    codeContent.style.outline = 'none';
+    codeContent.readOnly = true;    
+    const footer = document.createElement('div');
+    footer.style.padding = '10px 15px';
+    footer.style.backgroundColor = 'rgba(0, 30, 60, 0.9)';
+    footer.style.borderTop = '1px solid rgba(0, 119, 190, 0.5)';
+    footer.style.display = 'flex';
+    footer.style.justifyContent = 'flex-end';    
+    const copyButton = document.createElement('button');
+    copyButton.textContent = 'Copy to Clipboard';
+    copyButton.style.padding = '5px 10px';
+    copyButton.style.backgroundColor = 'rgba(0, 119, 190, 0.3)';
+    copyButton.style.color = 'white';
+    copyButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    copyButton.style.borderRadius = '3px';
+    copyButton.style.cursor = 'pointer';
+    copyButton.style.fontSize = '12px';
+    copyButton.addEventListener('click', () => {
+        codeContent.select();
+        document.execCommand('copy');
+        copyButton.textContent = 'Copied!';
+        setTimeout(() => {
+            copyButton.textContent = 'Copy to Clipboard';
+        }, 2000);
+    });
+    footer.appendChild(copyButton);
+    codeViewer.appendChild(header);
+    codeViewer.appendChild(codeContent);
+    codeViewer.appendChild(footer);
+    document.body.appendChild(codeViewer);
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            codeViewer.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+drawHologramConnector(meshWorldPosition, hologramCenterX, hologramBottomY) {
+    const existingConnector = document.querySelector('.hologram-connector');
+    const existingDot = document.querySelector('.connector-dot');    
+    if (existingConnector) document.body.removeChild(existingConnector);
+    if (existingDot) document.body.removeChild(existingDot);
+    const vector = meshWorldPosition.clone();
+    vector.project(this.camera);    
+    const meshScreenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
+    const meshScreenY = (-(vector.y * 0.5 + 0.5) + 1) * window.innerHeight;
+    if (vector.z > 1) {
+        return;
+    }
+    const hologram = document.getElementById('holographic-display');
+    const hologramCenterY = hologramBottomY - (hologram.offsetHeight / 2);    
+    const dx = hologramCenterX - meshScreenX;
+    const dy = hologramCenterY - meshScreenY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    const connector = document.createElement('div');
+    connector.className = 'hologram-connector';
+    connector.style.width = `${length}px`;
+    connector.style.left = `${meshScreenX}px`;
+    connector.style.top = `${meshScreenY}px`;
+    connector.style.transform = `rotate(${angle}deg)`;    
+    const dot = document.createElement('div');
+    dot.className = 'connector-dot';
+    dot.style.left = `${meshScreenX - 3}px`;
+    dot.style.top = `${meshScreenY - 3}px`;    
+    document.body.appendChild(connector);
+    document.body.appendChild(dot);
+}
+setupClickHandlers() {
+    this.renderer.domElement.addEventListener('click', (event) => {
+        const mouse = new THREE.Vector2();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;        
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, this.camera);
+        const intersects = raycaster.intersectObjects(this.fileObjects.children, true);
+        if (intersects.length > 0) {
+            const object = intersects[0].object;
+            const item = object.userData.itemData;
+            if (item.is_dir) {
+                this.navigateToPath(item.path);
+            } else {
+                this.showHolographicInfo(item, object);
+            }
+        }
+    });
+this.renderer.domElement.addEventListener('touchstart', (event) => {
+    if (event.touches.length === 1) {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const mouse = new THREE.Vector2();
+        mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, this.camera);
+        const intersects = raycaster.intersectObjects(this.fileObjects.children, true);
+        if (intersects.length > 0) {
+            const object = intersects[0].object;
+            const item = object.userData.itemData;
+            if (!item.is_dir) {
+                this.animateClickRotation(object);
+            }            
+            if (item.is_dir) {
+                this.hideHologram();
+                this.navigateToPath(item.path);
+            } else {
+                this.showHolographicInfo(item, object);
+            }
+        }
+    }
+});
+this.renderer.domElement.addEventListener('click', (event) => {
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1; 
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, this.camera);
+    const intersects = raycaster.intersectObjects(this.fileObjects.children, true);
+    if (intersects.length > 0) {
+        const object = intersects[0].object;
+        const item = object.userData.itemData;
+        if (!item.is_dir) {
+            this.animateClickRotation(object);
+        }        
+        if (item.is_dir) {
+            this.hideHologram();
+            this.navigateToPath(item.path);
+        } else {
+            this.showHolographicInfo(item, object);
+        }
+    }
+});
+}
+hideHologram() {
+    document.getElementById('holographic-display').style.display = 'none';
+    this.hologramVisible = false;
+    this.currentHologramMesh = null;
+    this.hologramMeshPosition = null;
+    const connector = document.querySelector('.hologram-connector');
+    const dot = document.querySelector('.connector-dot');    
+    if (connector) document.body.removeChild(connector);
+    if (dot) document.body.removeChild(dot);
+    if (this.hologramTimeout) {
+        clearTimeout(this.hologramTimeout);
+        this.hologramTimeout = null;
+    }
+    this.removeLoadingAnimation();
+}
+setupKeyboardControls() {
+                window.addEventListener('keydown', (event) => {
+                    switch (event.key.toLowerCase()) {
+                        case 'w':
+                        case 'arrowup':
+                            this.moveState.forward = true;
+                            break;
+                        case 's':
+                        case 'arrowdown':
+                            this.moveState.backward = true;
+                            break;
+                        case 'a':
+                        case 'arrowleft':
+                            this.moveState.left = true;
+                            break;
+                        case 'd':
+                        case 'arrowright':
+                            this.moveState.right = true;
+                            break;
+                        case 'e':
+                        case ' ':
+                            this.moveState.up = true;
+                            break;
+                        case 'q':
+                        case 'shift':
+                            this.moveState.down = true;
+                            break;
+                        case 'escape':
+                            this.hideHologram();
+                            break;
+                    }
+                });                
+                window.addEventListener('keyup', (event) => {
+                    switch (event.key.toLowerCase()) {
+                        case 'w':
+                        case 'arrowup':
+                            this.moveState.forward = false;
+                            break;
+                        case 's':
+                        case 'arrowdown':
+                            this.moveState.backward = false;
+                            break;
+                        case 'a':
+                        case 'arrowleft':
+                            this.moveState.left = false;
+                            break;
+                        case 'd':
+                        case 'arrowright':
+                            this.moveState.right = false;
+                            break;
+                        case 'e':
+                        case ' ':
+                            this.moveState.up = false;
+                            break;
+                        case 'q':
+                        case 'shift':
+                            this.moveState.down = false;
+                            break;
+                    }
+                });
+            }
+showLoadingAnimation(mesh) {
+  this.removeLoadingAnimation();  
+  const meshPosition = new THREE.Vector3();
+  mesh.getWorldPosition(meshPosition);  
+  const loadingContainer = document.createElement('div');
+  loadingContainer.id = 'hologram-loading';
+  loadingContainer.className = 'hologram-loading-2d';
+  loadingContainer.style.position = 'fixed';
+  loadingContainer.style.zIndex = '101';  
+  const screenPos = this.convert3DToScreen(
+    meshPosition.x, 
+    meshPosition.y + 1.5, 
+    meshPosition.z
+  );  
+  loadingContainer.style.left = `${screenPos.x}px`;
+  loadingContainer.style.top = `${screenPos.y}px`;
+  const outerCircle = document.createElement('div');
+  outerCircle.className = 'circle';
+  loadingContainer.appendChild(outerCircle);  
+  const innerCircle = document.createElement('div');
+  innerCircle.className = 'inner-circle';
+  loadingContainer.appendChild(innerCircle);  
+  const core = document.createElement('div');
+  core.className = 'core';
+  loadingContainer.appendChild(core);  
+  document.body.appendChild(loadingContainer);
+  this.loadingAnimation = loadingContainer;
+}
+removeLoadingAnimation() {
+    if (this.loadingAnimation) {
+        this.loadingAnimation.remove();
+        this.loadingAnimation = null;
+    }}
+async transitionToNewView(targetPath, isBackNavigation = false) {
+    try {
+        this.showLoadingWindow(isBackNavigation ? "Surfacing..." : "Diving deeper...");
+        await this.loadDirectoryContent(targetPath, isBackNavigation);        
+    } catch (error) {
+        console.error('Transition error:', error);
+        this.showError("Navigation failed: " + error.message);
+    } finally {
+        this.hideLoadingWindow();
+    }
+}
+showLoadingWindow(message = "Loading...") {
+    let loadingWindow = document.getElementById('claymation-loading-window');    
+    if (!loadingWindow) {
+        loadingWindow = document.createElement('div');
+        loadingWindow.id = 'claymation-loading-window';
+        loadingWindow.style.position = 'fixed';
+        loadingWindow.style.top = '50%';
+        loadingWindow.style.left = '50%';
+        loadingWindow.style.transform = 'translate(-50%, -50%)';
+        loadingWindow.style.backgroundColor = 'rgba(0, 30, 60, 0.95)';
+        loadingWindow.style.border = '2px solid rgba(0, 119, 190, 0.7)';
+        loadingWindow.style.borderRadius = '10px';
+        loadingWindow.style.padding = '20px';
+        loadingWindow.style.zIndex = '10000';
+        loadingWindow.style.boxShadow = '0 0 30px rgba(0, 119, 190, 0.5)';
+        loadingWindow.style.textAlign = 'center';
+        loadingWindow.style.minWidth = '200px';
+        loadingWindow.style.fontFamily = 'inherit';
+        loadingWindow.style.color = '#a0d2ff';
+        loadingWindow.style.textShadow = '0 0 5px rgba(160, 210, 255, 0.7)';        
+        document.body.appendChild(loadingWindow);
+    }
+    loadingWindow.innerHTML = `
+        <div style="margin-bottom: 15px; font-size: 18px;">${message}</div>
+        <div class="claymation-loader" style="
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            position: relative;
+        ">
+            <div style="
+                width: 100%;
+                height: 100%;
+                border: 3px solid rgba(160, 210, 255, 0.3);
+                border-top: 3px solid #a0d2ff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                box-shadow: 0 0 10px rgba(160, 210, 255, 0.5);
+            "></div>
+        </div>
+    `;    
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);    
+    loadingWindow.style.display = 'block';
+}
+easeOutBounce(t) {
+    const n1 = 7.5625;
+    const d1 = 2.75;   
+    if (t < 1 / d1) {
+        return n1 * t * t;
+    } else if (t < 2 / d1) {
+        return n1 * (t -= 1.5 / d1) * t + 0.75;
+    } else if (t < 2.5 / d1) {
+        return n1 * (t -= 2.25 / d1) * t + 0.9375;
+    } else {
+        return n1 * (t -= 2.625 / d1) * t + 0.984375;
+    }
+}
+easeInOutQuad(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+easeInCubic(t) {
+    return t * t * t;
+}
+easeOutElastic(t) {
+    const c4 = (2 * Math.PI) / 3;
+    return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+}
+async goBack() {
+    this.hideHologram();    
+    if (this.currentPath === '' && this.pathHistory.length === 0) {
+        return;
+    }    
+    if (this.creatingObjects) return;
+    this.creatingObjects = true;    
+    try {
+        let targetPath = '';
+        if (this.pathHistory.length > 0) {
+            targetPath = this.pathHistory.pop();
+        } else {
+            targetPath = '';
+        }        
+        document.getElementById('status-message').style.display = 'block';
+        document.getElementById('status-message').querySelector('p').textContent = 'Loading...';        
+        await this.transitionToNewView(targetPath, true);        
+    } catch (error) {
+        console.error('Error going back:', error);
+        document.getElementById('status-message').style.display = 'none';
+        this.showError("Could not load directory: " + error.message);
+        this.creatingObjects = false;
+    }
+}
+async navigateToPath(path) {
+    this.hideHologram();    
+    if (this.creatingObjects) return;
+    this.creatingObjects = true;    
+    try {
+        if (this.currentPath !== '') {
+            this.pathHistory.push(this.currentPath);
+        } else if (this.currentPath === '' && path !== '') {
+            this.pathHistory.push('');
+        }        
+        document.getElementById('status-message').style.display = 'block';
+        document.getElementById('status-message').querySelector('p').textContent = 'Loading...';        
+        await this.transitionToNewView(path, false);        
+    } catch (error) {
+        console.error('Error navigating to path:', error);
+        document.getElementById('status-message').style.display = 'none';
+        this.showError("Could not load directory: " + error.message);
+        this.creatingObjects = false;
+    }
+}
+async loadDirectoryContent(targetPath, isBackNavigation) {
+    try {
+        const apiUrl = targetPath === '' 
+            ? `${this.apiBase}/api/files`
+            : `${this.apiBase}/api/files/${encodeURIComponent(targetPath)}`;
+        const response = await fetch(apiUrl);        
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        this.currentPath = targetPath;
+        this.depthLevel = this.pathHistory.length;        
+        document.getElementById('current-path').textContent = 
+            data.current_path === '' || data.current_path === '/' ? 'Portfolio' : data.current_path;        
+        await this.animateFileObjectsChange(data.items || []);        
+        document.getElementById('back-button').style.display = 
+            (this.currentPath !== '' || this.pathHistory.length > 0) ? 'flex' : 'none';        
+    } catch (error) {
+        console.error('Error loading directory:', error);
+        this.showError("Could not load directory: " + error.message);
+    } finally {
+        this.creatingObjects = false;
+    }
+}
+async animateDepthChange(isBackNavigation) {
+    const depthIndicator = document.getElementById('depth-indicator');
+    const depthText = this.getDepthText(this.depthLevel);   
+    const tempDepthElement = document.createElement('div');
+    tempDepthElement.style.position = 'fixed';
+    tempDepthElement.style.top = '20px';
+    tempDepthElement.style.right = '20px';
+    tempDepthElement.style.color = '#a0d2ff';
+    tempDepthElement.style.fontSize = '16px';
+    tempDepthElement.style.textShadow = '0 0 5px rgba(160, 210, 255, 0.7)';
+    tempDepthElement.style.zIndex = '1000';
+    tempDepthElement.style.opacity = '0';
+    tempDepthElement.style.transition = 'opacity 0.5s ease';
+    tempDepthElement.textContent = `Depth: ${depthText}`;    
+    document.body.appendChild(tempDepthElement);
+    setTimeout(() => {
+        tempDepthElement.style.opacity = '1';
+    }, 10);    
+    await new Promise(resolve => setTimeout(resolve, 500));    
+    depthIndicator.textContent = `Depth: ${depthText}`;    
+    tempDepthElement.style.opacity = '0';    
+    setTimeout(() => {
+        document.body.removeChild(tempDepthElement);
+    }, 500);
+}
+getDepthText(level) {
+    return level === 0 ? "Surface" : 
+           level === 1 ? "Shallow" :
+           level === 2 ? "Sub Shallow" :
+           level === 3 ? "Medium" : 
+           level === 4 ? "Deep Medium" :
+           level === 5 ? "Deep" :
+           level === 6 ? "Very Deep" :
+           level === 7 ? "Pre abyss" :
+           level === 8 ? "Abyss" : "Beyond Abyss";
+}
+async animateFileObjectsChange(items) {
+    this.showLoadingWindow("Coming");    
+    try {
+        if (this.fileObjects.children.length > 0) {
+            await this.animateObjectsFadeOut();
+        }        
+        await this.animateObjectsFadeIn(items);        
+    } catch (error) {
+        console.error('Animation error:', error);
+    } finally {
+        this.hideLoadingWindow();
+    }
+}
+async animateObjectsFadeIn(items) {
+    return new Promise((resolve) => {
+        const animationDuration = 1000; 
+        const startTime = Date.now();       
+        this.createFileObjects(items);
+        if (this.fileObjects.children.length === 0) {
+            resolve();
+            return;
+        }
+        const finalPositions = this.fileObjects.children.map(child => child.position.clone());
+        this.fileObjects.children.forEach((child, index) => {
+            child.scale.set(0.01, 0.01, 0.01);
+            child.material.transparent = true;
+            child.material.opacity = 0;
+            child.userData.finalPosition = finalPositions[index];
+        });
+        const animateClaymation = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / animationDuration, 1); 
+            this.fileObjects.children.forEach((child) => {
+                if (!child || !child.userData.finalPosition) return;
+                const scale = progress;
+                child.scale.set(scale, scale, scale);
+                child.material.opacity = progress;
+            });
+            if (progress < 1) {
+                requestAnimationFrame(animateClaymation);
+            } else {
+                this.fileObjects.children.forEach((child) => {
+                    if (child && child.userData.finalPosition) {
+                        child.scale.set(1, 1, 1);
+                        child.material.opacity = 1;
+                        child.material.transparent = false;
+                    }
+                });
+                resolve();
+            }
+        };
+        animateClaymation();
+    });
+}
+async animateObjectsFadeOut() {
+    return new Promise((resolve) => {
+        const animationDuration = 600;
+        const startTime = Date.now();       
+        if (this.fileObjects.children.length === 0) {
+            resolve();
+            return;
+        }
+        const animateClaymation = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / animationDuration, 1);   
+            this.fileObjects.children.forEach((child) => {
+                if (!child) return;
+                const scale = 1 - progress;
+                child.scale.set(scale, scale, scale);
+                child.material.transparent = true;
+                child.material.opacity = 1 - progress;
+            });
+            if (progress < 1) {
+                requestAnimationFrame(animateClaymation);
+            } else {
+                this.clearFileObjects();
+                resolve();
+            }
+        };
+        animateClaymation();
+    });
+}
+clearNameLabels() {
+    this.nameLabels.forEach(labelData => {
+        if (labelData.element && labelData.element.parentNode) {
+            try {
+                labelData.element.parentNode.removeChild(labelData.element);
+            } catch (e) {
+                console.warn('Error removing label element:', e);
+            }
+        }
+    });
+    this.nameLabels = [];
+}
+showError(message) {
+    document.getElementById('loading-screen').style.display = 'none';   
+    const errorElement = document.getElementById('error-message');
+    errorElement.querySelector('p').textContent = message;
+    errorElement.style.display = 'block';
+}
+animate() {
+    requestAnimationFrame(() => this.animate());   
+    const currentTime = Date.now() * 0.001;    
+    this.updateSurfaceVisibility();
+    this.updateLightingBasedOnView();    
+    this.updateBackgroundParallax();    
+    this.updateParticles();
+    const moveSpeed = 0.1;
+    const moveVector = new THREE.Vector3();    
+    if (this.moveState.forward) moveVector.z -= moveSpeed;
+    if (this.moveState.backward) moveVector.z += moveSpeed;
+    if (this.moveState.left) moveVector.x -= moveSpeed;
+    if (this.moveState.right) moveVector.x += moveSpeed;
+    if (this.moveState.up) moveVector.y += moveSpeed;
+    if (this.moveState.down) moveVector.y -= moveSpeed;
+    moveVector.applyQuaternion(this.camera.quaternion);
+    this.camera.position.add(moveVector);
+    if (this.hologramVisible) {
+        this.updateHologramPosition();
+    }
+    if (this.anglerfish) {
+        this.anglerfish.update();
+    }    
+    this.updateNameLabels();    
+    if (this.lastMousePosition && this.mouseX !== undefined && this.mouseY !== undefined) {
+        const mouseMovementX = (this.mouseX - this.lastMousePosition.x) * 0.01;
+        const mouseMovementY = (this.mouseY - this.lastMousePosition.y) * 0.01;        
+        this.backgroundLayers.children.forEach(layer => {
+            const parallaxFactor = layer.userData.parallaxFactor || 0.05;
+            layer.rotation.y += mouseMovementX * parallaxFactor;
+            layer.rotation.x += mouseMovementY * parallaxFactor * 0.5;
+        });        
+        this.lastMousePosition.set(this.mouseX, this.mouseY);
+    }
+    if (this.fileObjects) {
+        this.fileObjects.children.forEach(obj => {
+            if (obj.userData.floatPhase !== undefined && Date.now() > obj.userData.initialDelay) {
+                const floatSpeed = obj.userData.floatSpeed;
+                const phase = obj.userData.floatPhase;
+                const amplitude = obj.userData.floatAmplitude;                
+                const targetY = obj.userData.originalPosition.y + 
+                               Math.sin(currentTime * floatSpeed + phase) * amplitude;                
+                const targetX = obj.userData.originalPosition.x + 
+                               Math.cos(currentTime * floatSpeed * 0.7 + phase) * amplitude * 0.5;
+                const targetZ = obj.userData.originalPosition.z + 
+                               Math.sin(currentTime * floatSpeed * 0.5 + phase) * amplitude * 0.5;
+                obj.position.y += (targetY - obj.position.y) * 0.005;
+                obj.position.x += (targetX - obj.position.x) * 0.005;
+                obj.position.z += (targetZ - obj.position.z) * 0.005;                
+                obj.rotation.x += 0.1 * floatSpeed;
+                obj.rotation.y += 0.7 * floatSpeed;
+                obj.rotation.z += 0.5 * floatSpeed;                
+                const scalePulse = 1 + Math.sin(currentTime * floatSpeed * 0.5 + phase) * 0.01;
+                obj.scale.set(scalePulse, scalePulse, scalePulse);
+            }
+        });
+    }    
+    const seaTime = currentTime;
+    const positions = this.sea.geometry.attributes.position.array;
+    for (let i = 0; i < positions.length; i += 3) {
+        const x = positions[i];
+        const z = positions[i + 2];
+        positions[i + 1] = Math.sin(x * 0.1 + seaTime) * Math.cos(z * 0.1 + seaTime) * 0.5;
+    }
+    this.sea.geometry.attributes.position.needsUpdate = true;
+    if (this.controls) {
+        this.controls.update();
+    }    
+    this.renderer.render(this.scene, this.camera);
+}
+}
+        window.addEventListener('load', () => {
+            new FileExplorer();
+        });
+        const loadingText = document.getElementById('loading-text');
+        const texts = [
+            "Loading content",
+            "Initializing portfolio",
+            "Preparing assets",
+            "Almost ready"
+        ];        
+        let textIndex = 0;
+        function changeLoadingText() {
+            loadingText.innerHTML = texts[textIndex] + '<span class="dots"></span>';
+            textIndex = (textIndex + 1) % texts.length;
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            setInterval(changeLoadingText, 3000);
+        });
+    </script>
+</body>
+</html>

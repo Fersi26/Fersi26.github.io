@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mendesk</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/indexstyles.css">
+    <link rel="icon" type="image/png" href="images/icon1.png">
+    <link rel="apple-touch-icon" href="images/icon1.png">
+    <link rel="shortcut icon" href="images/icon1.png" type="image/x-icon">
+</head>
+<body>
+<div class="apps-container">
+    <div class="apps-handle"></div>
+    <div class="apps-body">
+        <h3 class="apps-title">Explore My Portfolio</h3>
+        <div class="button-container">
+            <button class="portfolio-button underwater-btn" data-type="underwater">
+                <span class="button-icon">✧</span>
+                underwater Portfolio design
+            </button>
+            <button class="portfolio-button straightforward-btn" data-type="straightforward">
+                <span class="button-icon">✧</span>
+                Straightforward Portfolio
+            </button>
+            <button class="portfolio-button space-btn" data-type="space">
+                <span class="button-icon">✧</span>
+                Galactic Portfolio design
+            </button>
+        </div>
+    </div>
+</div>
+<div class="social-container">
+    <h3 class="social-title">Profiles 👇</h3>
+    <div class="social-icons">
+     <a href="https://www.linkedin.com" class="social-link linkedin" target="_blank">
+    <div class="social-icon" data-name="LinkedIn">
+        <i class="fab fa-linkedin-in"></i>
+    </div>
+</a>
+
+
+
+<a href="https://play.google.com" class="social-link google-play" target="_blank">
+    <div class="social-icon" data-name="Google Play">
+        <i class="fab fa-google-play"></i>
+    </div>
+</a>
+<a href="https://rapidapi.com" class="social-link rapidapi" target="_blank">
+    <div class="social-icon" data-name="RapidAPI">
+        <i class="fas fa-bolt"></i>
+    </div>
+</a>
+<a href="https://github.com" class="social-link github" target="_blank">
+    <div class="social-icon" data-name="GitHub">
+        <i class="fab fa-github"></i>
+    </div>
+</a> 
+
+<!-- Add this button to your social-icons section -->
+<a href="#" class="social-link gemma" id="ask-gemma-btn">
+    <div class="social-icon" data-name="Ask Gemma">
+        <i class="fas fa-robot"></i>
+    </div>
+</a>
+
+</a>
+    </div>
+<div class="contact-container">
+    <div class="contact-handle"></div>
+    <div class="contact-body">
+        <h3 class="contact-title">Direct Contact</h3>
+        <div class="direct-contact">
+            <table class="contact-table">
+                <tr>
+                    <td><i class="fas fa-phone"></i></td>
+                    <td>+000 00 000 000</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-phone"></i></td>
+                    <td>+000 00 000 000</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-envelope"></i></td>
+                    <td>000000000000@gmail.com</td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-envelope"></i></td>
+                    <td>0000000000000@0000-000.00</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+    <script>
+        const originalButtonContents = new Map();
+        function resetButtons() {
+            const buttons = document.querySelectorAll('.portfolio-button');
+            buttons.forEach(button => {
+                button.classList.remove('loading');
+                const type = button.getAttribute('data-type');
+                if (originalButtonContents.has(type)) {
+                    button.innerHTML = originalButtonContents.get(type);
+                } else {
+                    button.innerHTML = '<span class="button-icon">✧</span> ' + 
+                        button.textContent.replace('Loading...', '').trim();
+                }
+            });
+        }
+// Add this function to handle the Ask Gemma button
+function initAskGemmaButton() {
+    const askGemmaBtn = document.getElementById('ask-gemma-btn');
+    
+    askGemmaBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Immediately redirect to ProfileCard.html
+        window.location.href = 'ProfileCard.html';
+    });
+}
+
+
+
+
+
+        function storeOriginalButtonContent() {
+            const buttons = document.querySelectorAll('.portfolio-button');
+            buttons.forEach(button => {
+                const type = button.getAttribute('data-type');
+                originalButtonContents.set(type, button.innerHTML);
+            });
+        }
+ 
+ 
+ 
+ 
+        function createSnowCrystals() {
+            const snowBg = document.createElement('div');
+            snowBg.className = 'snow-crystal-bg';   
+            const colors = ['#000000', '#00023e', '#ffebd1', '#ffe4c2'];
+            for (let i = 0; i < 40; i++) {
+                const crystal = document.createElement('div');
+                crystal.className = 'snow-crystal';
+                const type = Math.floor(Math.random() * 4) + 1;
+                crystal.classList.add(`type-${type}`);
+                const size = Math.random() * 20 + 10;
+                crystal.style.width = `${size}px`;
+                crystal.style.height = `${size}px`;
+                crystal.style.left = `${Math.random() * 100}%`;
+                const startPosition = Math.random() * 100;
+                crystal.style.top = `${startPosition}%`;
+                const colorIndex = Math.floor(Math.random() * colors.length);
+                crystal.style.backgroundColor = colors[colorIndex];
+                const duration = Math.random() * 20 + 25;
+                crystal.style.animationDuration = `${duration}s`;
+                const delay = (100 - startPosition) / 100 * duration - duration;
+                crystal.style.animationDelay = `${delay}s`;
+                if (Math.random() > 0.5) {
+                    crystal.style.animation = `fallDown ${duration}s linear infinite reverse`;
+                    crystal.style.animationDelay = `${delay}s`;
+                }
+                snowBg.appendChild(crystal);
+            }
+            document.body.appendChild(snowBg);
+        }
+        function toggleContainer(containerType, open) {
+            const body = document.querySelector(`.${containerType}-body`);
+            const handle = document.querySelector(`.${containerType}-handle`);   
+            if (open) {
+                body.classList.add('open');
+                handle.style.transform = 'rotate(180deg) scale(1.05)';
+            } else {
+                body.classList.remove('open');
+                handle.style.transform = 'scale(1.05)';
+            }
+        }
+        function initPage() {
+            createSnowCrystals();
+            storeOriginalButtonContent();
+                initAskGemmaButton();
+
+            const portfolioButtons = document.querySelectorAll('.portfolio-button');
+            document.querySelector('.apps-handle').addEventListener('click', () => {
+                const isOpen = document.querySelector('.apps-body').classList.contains('open');
+                toggleContainer('apps', !isOpen);
+            });            
+            document.querySelector('.contact-handle').addEventListener('click', () => {
+                const isOpen = document.querySelector('.contact-body').classList.contains('open');
+                toggleContainer('contact', !isOpen);
+            });
+            setTimeout(() => {
+                toggleContainer('apps', true);                
+                setTimeout(() => {
+                    toggleContainer('contact', true);
+                }, 500);
+            }, 1000);
+            resetButtons();
+            portfolioButtons.forEach(button => {
+                button.style.opacity = '0';
+                button.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    button.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    button.style.opacity = '1';
+                    button.style.transform = 'translateY(0)';
+                }, 300 + (Array.from(portfolioButtons).indexOf(button) * 200));
+            });
+            portfolioButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const portfolioType = this.getAttribute('data-type');
+                    this.classList.add('loading');
+                    const originalHtml = this.innerHTML;
+                    this.innerHTML = '<span class="button-icon">⏳</span> Loading...';
+                    sessionStorage.setItem('loadingButton', portfolioType);
+                    setTimeout(() => {
+                        switch(portfolioType) {
+                            case 'underwater':
+                                window.location.href = 'underwater-portfolio.html';
+                                break;
+                            case 'straightforward':
+                                window.location.href = 'simple/straightforward-portfolio.html';
+                                break;
+                            case 'space':
+                                window.location.href = 'space-portfolio.html';
+                                break;
+                            default:
+                                console.log('Unknown portfolio type');
+                                this.classList.remove('loading');
+                                this.innerHTML = originalHtml;
+                        }
+                    }, 100);
+                });
+            });
+        }
+        document.addEventListener('DOMContentLoaded', initPage);        
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                resetButtons();
+            }
+        });
+    </script>
+</body>
+</html>

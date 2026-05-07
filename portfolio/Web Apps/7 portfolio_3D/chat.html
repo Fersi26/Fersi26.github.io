@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="css/styles_chat.css">
+    <link rel="stylesheet" href="css/AnimatedList.css">
+    <link rel="icon" type="image/png" href="images/icon7.png">
+    <link rel="apple-touch-icon" href="images/icon7.png">
+    <link rel="shortcut icon" href="images/icon7.png" type="image/x-icon">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- Aurora background container -->
+    <div id="aurora-background" class="aurora-container"></div>
+    
+    <!-- Main chat interface -->
+    <div class="container">
+        <div id="chat" class="electric-border">
+            <div class="ai">
+                🤖
+                <div class="message-content">Find out more about me<span class="model-info">I have all insights!</span></div>
+            </div>
+        </div>
+<!-- Single input container with proper order -->
+<div class="input-container">
+    <input type="text" id="messageInput" placeholder="Type your message here">
+    
+    <!-- Animated List Container - between input and send button -->
+    <div class="animated-list-container" id="modelsListContainer"></div>
+    
+    <div id="sendButtonContainer" class="shape-blur-button" onclick="sendMessage()">
+        <div class="button-text">Send</div>
+    </div>
+</div>
+    </div>
+<script src="js/AnimatedList.js"></script>
+    <!-- Aurora implementation -->
+    <script>
+        // Aurora component implementation
+        class Aurora {
+            constructor(container, options = {}) {
+                this.container = container;
+                this.colorStops = options.colorStops || ['#3A29FF', '#FF94B4', '#FF3232'];
+                this.amplitude = options.amplitude || 1.0;
+                this.blend = options.blend || 0.5;
+                this.speed = options.speed || 0.5;
+                
+                this.init();
+            }
+            
+            init() {
+                // Create canvas
+                this.canvas = document.createElement('canvas');
+                this.container.appendChild(this.canvas);
+                this.gl = this.canvas.getContext('webgl2', {
+                    alpha: true,
+                    premultipliedAlpha: true,
+                    antialias: true
+                });
+                
+                if (!this.gl) {
+                    console.error('WebGL 2 not supported, falling back to WebGL 1');
+                    this.gl = this.canvas.getContext('webgl', {
+                        alpha: true,
+                        premultipliedAlpha: true,
+                        antialias: true
+                    });
+                }
+                
+                if (!this.gl) {
+                    console.error('WebGL not supported');
+                    return;
+                }
+                
+                this.gl.clearColor(0, 0, 0, 0);
+                this.gl.enable(this.gl.BLEND);
+                this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
+                
+                // Create shader program
+                this.program = this.createProgram();
+                if (!this.program) {
+                    console.error('Failed to create shader program');
+                    return;
+                }
+                
+                // Create geometry
+                this.geometry = this.createGeometry();
+                
+                // Set uniforms
+                this.setUniforms();
+                
+                // Handle resize
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                
+                // Start animation
+                this.time = 0;
+                this.animate();
+            }
+            
+            createProgram() {
+                // Vertex shader source
+                const vertSource = `#version 300 es
+in vec2 position;
+void main() {
+    gl_Position = vec4(position, 0.0, 1.0);
+}`;
+
+                // Fragment shader source
+                const fragSource = `#version 300 es
+precision highp float;
+
+uniform float uTime;
+uniform float uAmplitude;
+uniform vec3 uColorStops[3];
+uniform vec2 uResolution;
+uniform float uBlend;
+
+out vec4 fragColor;
+
+vec3 permute(vec3 x) {
+    return mod(((x * 34.0) + 1.0) * x, 289.0);
+}
+
+float snoise(vec2 v){
+    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+    vec2 i  = floor(v + dot(v, C.yy));
+    vec2 x0 = v - i + dot(i, C.xx);
+    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    vec4 x12 = x0.xyxy + C.xxzz;
+    x12.xy -= i1;
+    i = mod(i, 289.0);
+
+    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+
+    vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+    m = m * m;
+    m = m * m;
+
+    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+    vec3 h = abs(x) - 0.5;
+    vec3 ox = floor(x + 0.5);
+    vec3 a0 = x - ox;
+    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+
+    vec3 g;
+    g.x  = a0.x  * x0.x  + h.x  * x0.y;
+    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+    return 130.0 * dot(m, g);
+}
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / uResolution;
+    
+    // Create color stops array
+    vec3 color1 = uColorStops[0];
+    vec3 color2 = uColorStops[1];
+    vec3 color3 = uColorStops[2];
+    
+    // Manual color interpolation
+    vec3 rampColor;
+    if (uv.x < 0.5) {
+        float t = uv.x * 2.0;
+        rampColor = mix(color1, color2, t);
+    } else {
+        float t = (uv.x - 0.5) * 2.0;
+        rampColor = mix(color2, color3, t);
+    }
+    
+    float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
+    height = exp(height);
+    height = (uv.y * 2.0 - height + 0.2);
+    float intensity = 0.6 * height;
+    
+    float midPoint = 0.20;
+    float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
+    
+    vec3 auroraColor = intensity * rampColor;
+    
+    fragColor = vec4(auroraColor * auroraAlpha, auroraAlpha);
+}`;
+
+                const vertShader = this.compileShader(this.gl.VERTEX_SHADER, vertSource);
+                const fragShader = this.compileShader(this.gl.FRAGMENT_SHADER, fragSource);
+                
+                if (!vertShader || !fragShader) {
+                    return null;
+                }
+                
+                const program = this.gl.createProgram();
+                this.gl.attachShader(program, vertShader);
+                this.gl.attachShader(program, fragShader);
+                this.gl.linkProgram(program);
+                
+                if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+                    console.error('Program linking error:', this.gl.getProgramInfoLog(program));
+                    return null;
+                }
+                
+                return program;
+            }
+            
+            compileShader(type, source) {
+                const shader = this.gl.createShader(type);
+                this.gl.shaderSource(shader, source);
+                this.gl.compileShader(shader);
+                
+                if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+                    console.error('Shader compilation error:', this.gl.getShaderInfoLog(shader));
+                    this.gl.deleteShader(shader);
+                    return null;
+                }
+                
+                return shader;
+            }
+            
+            createGeometry() {
+                const vertices = new Float32Array([
+                    -1, -1,
+                    1, -1,
+                    -1, 1,
+                    1, 1
+                ]);
+                
+                const buffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+                
+                return buffer;
+            }
+            
+            setUniforms() {
+                this.gl.useProgram(this.program);
+                
+                // Set position attribute
+                const positionLocation = this.gl.getAttribLocation(this.program, 'position');
+                this.gl.enableVertexAttribArray(positionLocation);
+                this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 0, 0);
+                
+                // Set uniform locations
+                this.uniforms = {
+                    uTime: this.gl.getUniformLocation(this.program, 'uTime'),
+                    uAmplitude: this.gl.getUniformLocation(this.program, 'uAmplitude'),
+                    uColorStops: this.gl.getUniformLocation(this.program, 'uColorStops'),
+                    uResolution: this.gl.getUniformLocation(this.program, 'uResolution'),
+                    uBlend: this.gl.getUniformLocation(this.program, 'uBlend')
+                };
+                
+                // Convert hex colors to RGB arrays
+                const colorArrays = this.colorStops.map(hex => {
+                    const r = parseInt(hex.slice(1, 3), 16) / 255;
+                    const g = parseInt(hex.slice(3, 5), 16) / 255;
+                    const b = parseInt(hex.slice(5, 7), 16) / 255;
+                    return [r, g, b];
+                });
+                
+                this.gl.uniform3fv(this.uniforms.uColorStops, colorArrays.flat());
+                this.gl.uniform1f(this.uniforms.uAmplitude, this.amplitude);
+                this.gl.uniform1f(this.uniforms.uBlend, this.blend);
+            }
+            
+            resize() {
+                const width = this.container.clientWidth;
+                const height = this.container.clientHeight;
+                
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.gl.viewport(0, 0, width, height);
+                
+                if (this.uniforms && this.uniforms.uResolution) {
+                    this.gl.useProgram(this.program);
+                    this.gl.uniform2f(this.uniforms.uResolution, width, height);
+                }
+            }
+            
+            animate() {
+                if (!this.program) return;
+                
+                this.time += 0.01 * this.speed;
+                
+                this.gl.useProgram(this.program);
+                this.gl.uniform1f(this.uniforms.uTime, this.time);
+                
+                this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+                
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize Aurora background
+        document.addEventListener('DOMContentLoaded', () => {
+            const auroraContainer = document.getElementById('aurora-background');
+           new Aurora(auroraContainer, {
+    colorStops: ['#e3cf6c', '#170c7a'], // NEW COLORS - only these two
+    amplitude: 1.0,
+    blend: 0.5,
+    speed: 0.5
+});
+
+            // Initialize ShapeBlur button
+            initShapeBlurButton();
+        });
+
+
+
+// Initialize AnimatedList for models - Compact version
+const models = [
+    'custom3:1b',
+    'Gemma:1b'
+];
+
+// Map display names to actual model values
+const modelValueMap = {
+    'custom3:1b': 'gemma-custom3:1b',
+    'Gemma:1b': 'gemma3:1b'
+};
+
+// Initialize the animated list
+const modelsListContainer = document.getElementById('modelsListContainer');
+const animatedList = new AnimatedList(modelsListContainer, {
+    items: models,
+    selectedItem: 'custom3:1b',
+    onItemSelect: (displayName, index) => {
+        const actualModel = modelValueMap[displayName];
+        console.log('Selected model:', actualModel, displayName);
+        currentSelectedModel = actualModel;
+    }
+});
+
+// Add this variable to track current model
+let currentSelectedModel = 'gemma-custom3:1b';
+
+
+
+
+
+        // ShapeBlur Button Implementation
+        function initShapeBlurButton() {
+            const container = document.getElementById('sendButtonContainer');
+            if (!container) return;
+
+            let animationFrameId;
+            let time = 0, lastTime = 0;
+
+            const vMouse = new THREE.Vector2();
+            const vMouseDamp = new THREE.Vector2();
+            const vResolution = new THREE.Vector2();
+
+            let w = 1, h = 1;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.OrthographicCamera();
+            camera.position.z = 1;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+            renderer.domElement.style.position = 'absolute';
+            renderer.domElement.style.top = '0';
+            renderer.domElement.style.left = '0';
+            renderer.domElement.style.width = '100%';
+            renderer.domElement.style.height = '100%';
+            renderer.domElement.style.pointerEvents = 'none';
+
+            const vertexShader = /* glsl */ `
+                varying vec2 v_texcoord;
+                void main() {
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    v_texcoord = uv;
+                }
+            `;
+
+            const fragmentShader = /* glsl */ `
+                varying vec2 v_texcoord;
+
+                uniform vec2 u_mouse;
+                uniform vec2 u_resolution;
+                uniform float u_pixelRatio;
+
+                uniform float u_shapeSize;
+                uniform float u_roundness;
+                uniform float u_borderSize;
+                uniform float u_circleSize;
+                uniform float u_circleEdge;
+
+                #ifndef PI
+                #define PI 3.1415926535897932384626433832795
+                #endif
+                #ifndef TWO_PI
+                #define TWO_PI 6.2831853071795864769252867665590
+                #endif
+
+                #ifndef VAR
+                #define VAR 0
+                #endif
+
+                #ifndef FNC_COORD
+                #define FNC_COORD
+                vec2 coord(in vec2 p) {
+                    p = p / u_resolution.xy;
+                    if (u_resolution.x > u_resolution.y) {
+                        p.x *= u_resolution.x / u_resolution.y;
+                        p.x += (u_resolution.y - u_resolution.x) / u_resolution.y / 2.0;
+                    } else {
+                        p.y *= u_resolution.y / u_resolution.x;
+                        p.y += (u_resolution.x - u_resolution.y) / u_resolution.x / 2.0;
+                    }
+                    p -= 0.5;
+                    p *= vec2(-1.0, 1.0);
+                    return p;
+                }
+                #endif
+
+                #define st0 coord(gl_FragCoord.xy)
+                #define mx coord(u_mouse * u_pixelRatio)
+
+                float sdRoundRect(vec2 p, vec2 b, float r) {
+                    vec2 d = abs(p - 0.5) * 4.2 - b + vec2(r);
+                    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r;
+                }
+                float sdCircle(in vec2 st, in vec2 center) {
+                    return length(st - center) * 2.0;
+                }
+                float sdPoly(in vec2 p, in float w, in int sides) {
+                    float a = atan(p.x, p.y) + PI;
+                    float r = TWO_PI / float(sides);
+                    float d = cos(floor(0.5 + a / r) * r - a) * length(max(abs(p) * 1.0, 0.0));
+                    return d * 2.0 - w;
+                }
+
+                float aastep(float threshold, float value) {
+                    float afwidth = length(vec2(dFdx(value), dFdy(value))) * 0.70710678118654757;
+                    return smoothstep(threshold - afwidth, threshold + afwidth, value);
+                }
+                float fill(in float x) { return 1.0 - aastep(0.0, x); }
+                float fill(float x, float size, float edge) {
+                    return 1.0 - smoothstep(size - edge, size + edge, x);
+                }
+                float stroke(in float d, in float t) { return (1.0 - aastep(t, abs(d))); }
+                float stroke(float x, float size, float w, float edge) {
+                    float d = smoothstep(size - edge, size + edge, x + w * 0.5) - smoothstep(size - edge, size + edge, x - w * 0.5);
+                    return clamp(d, 0.0, 1.0);
+                }
+
+                float strokeAA(float x, float size, float w, float edge) {
+                    float afwidth = length(vec2(dFdx(x), dFdy(x))) * 0.70710678;
+                    float d = smoothstep(size - edge - afwidth, size + edge + afwidth, x + w * 0.5)
+                            - smoothstep(size - edge - afwidth, size + edge + afwidth, x - w * 0.5);
+                    return clamp(d, 0.0, 1.0);
+                }
+
+                void main() {
+                    vec2 st = st0 + 0.5;
+                    vec2 posMouse = mx * vec2(1., -1.) + 0.5;
+
+                    float size = u_shapeSize;
+                    float roundness = u_roundness;
+                    float borderSize = u_borderSize;
+                    float circleSize = u_circleSize;
+                    float circleEdge = u_circleEdge;
+
+                    float sdfCircle = fill(
+                        sdCircle(st, posMouse),
+                        circleSize,
+                        circleEdge
+                    );
+
+                    float sdf;
+                    if (VAR == 0) {
+                        sdf = sdRoundRect(st, vec2(size), roundness);
+                        sdf = strokeAA(sdf, 0.0, borderSize, sdfCircle) * 4.0;
+                    } else if (VAR == 1) {
+                        sdf = sdCircle(st, vec2(0.5));
+                        sdf = fill(sdf, 0.6, sdfCircle) * 1.2;
+                    } else if (VAR == 2) {
+                        sdf = sdCircle(st, vec2(0.5));
+                        sdf = strokeAA(sdf, 0.58, 0.02, sdfCircle) * 4.0;
+                    } else if (VAR == 3) {
+                        sdf = sdPoly(st - vec2(0.5, 0.45), 0.3, 3);
+                        sdf = fill(sdf, 0.05, sdfCircle) * 1.4;
+                    }
+
+                    vec3 color = vec3(1.0);
+                    float alpha = sdf;
+                    gl_FragColor = vec4(color.rgb, alpha);
+                }
+            `;
+
+            const geo = new THREE.PlaneGeometry(1, 1);
+            const material = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                uniforms: {
+                    u_mouse: { value: vMouseDamp },
+                    u_resolution: { value: vResolution },
+                    u_pixelRatio: { value: window.devicePixelRatio || 1 },
+                    u_shapeSize: { value: 1.5 },
+                    u_roundness: { value: 0.5 },
+                    u_borderSize: { value: 0.05 },
+                    u_circleSize: { value: 0.5 },
+                    u_circleEdge: { value: 1 }
+                },
+                defines: { VAR: 0 },
+                transparent: true
+            });
+
+            const quad = new THREE.Mesh(geo, material);
+            scene.add(quad);
+
+            const onPointerMove = (e) => {
+                const rect = container.getBoundingClientRect();
+                vMouse.set(e.clientX - rect.left, e.clientY - rect.top);
+            };
+
+            container.addEventListener('mousemove', onPointerMove);
+            container.addEventListener('pointermove', onPointerMove);
+
+            const resize = () => {
+                w = container.clientWidth;
+                h = container.clientHeight;
+                const dpr = Math.min(window.devicePixelRatio, 2);
+
+                renderer.setSize(w, h);
+                renderer.setPixelRatio(dpr);
+
+                camera.left = -w / 2;
+                camera.right = w / 2;
+                camera.top = h / 2;
+                camera.bottom = -h / 2;
+                camera.updateProjectionMatrix();
+
+                quad.scale.set(w, h, 1);
+                vResolution.set(w, h).multiplyScalar(dpr);
+                material.uniforms.u_pixelRatio.value = dpr;
+            };
+
+            resize();
+            window.addEventListener('resize', resize);
+
+            const ro = new ResizeObserver(() => resize());
+            if (container) ro.observe(container);
+
+            const update = () => {
+                time = performance.now() * 0.001;
+                const dt = time - lastTime;
+                lastTime = time;
+
+                ['x', 'y'].forEach(k => {
+                    vMouseDamp[k] = THREE.MathUtils.damp(vMouseDamp[k], vMouse[k], 8, dt);
+                });
+
+                renderer.render(scene, camera);
+                animationFrameId = requestAnimationFrame(update);
+            };
+            update();
+
+            // Cleanup function
+            window.cleanupShapeBlurButton = () => {
+                cancelAnimationFrame(animationFrameId);
+                window.removeEventListener('resize', resize);
+                if (ro) ro.disconnect();
+                container.removeEventListener('mousemove', onPointerMove);
+                container.removeEventListener('pointermove', onPointerMove);
+                if (renderer.domElement.parentNode === container) {
+                    container.removeChild(renderer.domElement);
+                }
+                renderer.dispose();
+            };
+        }
+
+        // Chat functionality
+        let currentStreamingDiv = null;
+        let currentResponseText = '';
+        let isThinking = false;
+        
+        function getCurrentTime() {
+            return new Date().toLocaleTimeString();
+        }
+        
+        function formatText(text) {
+            // Convert markdown-style formatting to HTML
+            // Headers
+            text = text.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            text = text.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            text = text.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            
+            // Bold and Italic
+            text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            
+            // Code blocks
+            text = text.replace(/```(\w+)?\n([^`]+)```/g, '<pre><code>$2</code></pre>');
+            text = text.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
+            text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Blockquotes
+            text = text.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+            
+            // Lists
+            text = text.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+            text = text.replace(/^-\s+(.+)$/gm, '<li>$1</li>');
+            text = text.replace(/^\*\s+(.+)$/gm, '<li>$1</li>');
+            
+            // Wrap list items in ul/ol
+            text = text.replace(/(<li>.*<\/li>)/gs, function(match) {
+                if (match.match(/<li>\d+\./)) {
+                    return '<ol>' + match + '</ol>';
+                } else {
+                    return '<ul>' + match + '</ul>';
+                }
+            });
+            
+            // Line breaks and paragraphs
+            text = text.replace(/\n\n+/g, '</p><p>');
+            text = text.replace(/\n/g, '<br>');
+            text = '<p>' + text + '</p>';
+            
+            return text;
+        }
+        
+        function showThinking() {
+            const chat = document.getElementById('chat');
+            
+            // Create thinking message container
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'ai streaming-message';
+            thinkingDiv.innerHTML = '🤖<div class="thinking-container"><div class="shiny-text" style="animation-duration: 3s">Allow permission</div><span class="typing-cursor"></span></div>';
+            
+            chat.appendChild(thinkingDiv);
+            chat.scrollTop = chat.scrollHeight;
+            
+            isThinking = true;
+            return thinkingDiv;
+        }
+        
+        function hideThinking(thinkingDiv) {
+            if (thinkingDiv) {
+                thinkingDiv.remove();
+            }
+            isThinking = false;
+        }
+        
+        function addChunkToStream(chunk) {
+            if (!currentStreamingDiv) return;
+            
+            currentResponseText += chunk;
+            
+            // Simple formatting for streaming (basic markdown)
+            let formattedText = currentResponseText;
+            formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            formattedText = formattedText.replace(/`(.*?)`/g, '<code>$1</code>');
+            formattedText = formattedText.replace(/\n/g, '<br>');
+            
+            currentStreamingDiv.innerHTML = formattedText + '<span class="typing-cursor"></span>';
+            
+            // Auto scroll to bottom
+            const chat = document.getElementById('chat');
+            chat.scrollTop = chat.scrollHeight;
+        }
+        
+        function startStreamingResponse() {
+            const chat = document.getElementById('chat');
+            
+            // Create streaming message container
+            const streamingDiv = document.createElement('div');
+            streamingDiv.className = 'ai streaming-message';
+            streamingDiv.innerHTML = '🤖<span class="message-content"><span class="typing-cursor"></span></span>';
+            
+            chat.appendChild(streamingDiv);
+            chat.scrollTop = chat.scrollHeight;
+            
+            currentStreamingDiv = streamingDiv.querySelector('.message-content');
+            currentResponseText = '';
+            
+            return streamingDiv;
+        }
+        
+        function finalizeStreamingResponse(streamingDiv) {
+            if (!streamingDiv) return;
+            
+            // Remove cursor and apply full formatting
+            const messageContent = streamingDiv.querySelector('.message-content');
+            if (messageContent) {
+                messageContent.innerHTML = formatText(currentResponseText.trim());
+            }
+            
+            // Add timestamp
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = `Responded at: ${getCurrentTime()}`;
+            streamingDiv.appendChild(timestamp);
+            
+            // Reset streaming state
+            currentStreamingDiv = null;
+            currentResponseText = '';
+        }
+        
+ async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const chat = document.getElementById('chat');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Use the currentSelectedModel from AnimatedList instead of modelSelect
+    const model = currentSelectedModel || 'ghassen4:1b';
+    
+    // Add user message with timestamp
+    const userTime = getCurrentTime();
+    chat.innerHTML += `<div class="user">👤<div class="message-content">${message}</div><div class="timestamp">Sent at: ${userTime} | Model: ${model}</div></div>`;
+    input.value = '';
+    
+    // Show thinking state
+    const thinkingDiv = showThinking();
+    
+    try {
+        const response = await fetch('http://localhost:5343/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream'
+            },
+            body: JSON.stringify({
+                message: message,
+                model: model
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        // Remove thinking and start streaming
+        hideThinking(thinkingDiv);
+        const streamingDiv = startStreamingResponse();
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        
+                        if (data.chunk) {
+                            addChunkToStream(data.chunk);
+                        } else if (data.complete) {
+                            finalizeStreamingResponse(streamingDiv);
+                            return;
+                        } else if (data.error) {
+                            throw new Error(data.error);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing SSE data:', e);
+                    }
+                }
+            }
+        }
+        
+    } catch (error) {
+        hideThinking(thinkingDiv);
+        handleStreamError(error);
+    }
+}
+
+function handleStreamError(error) {
+            // Show error with timestamp
+            const chat = document.getElementById('chat');
+            const errorTime = getCurrentTime();
+            chat.innerHTML += `<div class="ai" style="color: #f04747;"> <strong>Error:</strong> <div class="message-content">${error.message || 'Connection error'}</div><div class="timestamp">Error occurred at: ${errorTime}</div></div>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+        
+        // Send message on Enter key
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+        
+        // Focus on input when page loads
+        document.getElementById('messageInput').focus();
+   
+   
+
+
+
+
+</script>
+</body>
+</html>

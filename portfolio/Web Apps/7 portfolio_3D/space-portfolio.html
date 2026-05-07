@@ -1,0 +1,3843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/styles1.css">
+    <title>Cosmic Portfolio Explorer</title>
+    <link rel="icon" type="image/png" href="images/icon2.jpg">
+    <link rel="apple-touch-icon" href="images/icon2.jpg">
+    <link rel="shortcut icon" href="images/icon2.jpg" type="image/x-icon">
+</head>
+<body>
+    <div id="canvas-container"></div>
+<div id="loading-screen">
+    <div id="status-message">
+<h2 class="wave">
+    <span style="--i:0">C</span>
+    <span style="--i:1">o</span>
+    <span style="--i:2">s</span>
+    <span style="--i:3">m</span>
+    <span style="--i:4">i</span>
+    <span style="--i:5">c</span>
+    <span style="--i:6">&nbsp;</span>
+    <span style="--i:7">P</span>
+    <span style="--i:8">o</span>
+    <span style="--i:9">r</span>
+    <span style="--i:10">t</span>
+    <span style="--i:11">f</span>
+    <span style="--i:12">o</span>
+    <span style="--i:13">l</span>
+    <span style="--i:14">i</span>
+    <span style="--i:15">o</span>
+</h2>
+        <img src="images/loading1.gif" alt="Loading..." id="loading-gif">
+        <p id="loading-text"></p>
+       <div id="loading-controls">
+    <p>Buckle up</p>
+    <p>To the stars!</p>
+</div>
+    </div>
+</div>
+<div id="search-container">
+    <div id="search-box">
+        <input type="text" id="search-input" placeholder="Search files and folders..." />
+        <button id="search-button">🔍</button>
+        <button id="close-search">×</button>
+    </div>
+    <div id="search-results">
+        <div id="search-results-header">
+            <h4>Search Results</h4>
+            <span id="search-count">0 results</span>
+        </div>
+        <div id="search-results-list"></div>
+    </div>
+</div>
+    <div id="error-message">
+        <p>Could not connect to server.</p>
+        <button id="retry-button">Retry Connection</button>
+    </div>
+    <div id="path-display">
+        <span id="current-path">Portfolio</span>
+    </div>
+    <div id="back-button" title="Go back">←</div>
+    <div id="surface"></div>
+    <div id="sun-rays"></div>
+    <div id="depth-indicator">Sector: Core System</div>
+    <div id="holographic-display">
+        <button id="close-hologram">×</button>
+        <h3 id="hologram-title">File Information</h3>
+        <div class="file-info">
+            <div>
+                <span class="label">Name:</span>
+                <span class="value" id="info-name">-</span>
+            </div>
+            <div>
+                <span class="label">Type:</span>
+                <span class="value" id="info-type">-</span>
+            </div>
+            <div>
+                <span class="label">Path:</span>
+                <span class="value" id="info-path">-</span>
+            </div>
+        </div>
+        <div class="file-description" id="info-description">
+            No description available.
+        </div>
+        <div class="folder-contents" id="folder-contents" style="display: none;">
+            <h4>Contents:</h4>
+            <ul id="folder-items"></ul>
+        </div>
+    </div>
+    </div>
+    <div id="controls-help-container">
+        <div id="controls-shift-button">
+            <span class="shift-icon">⇧</span>
+            <span class="shift-text">Controls</span>
+        </div>
+        <div id="controls-panel">
+            <button id="close-controls">×</button>
+            <h4>Navigation Controls</h4>
+            <div class="control-item">
+                <span class="key">W / S</span>
+                <span class="action">Move Forward/Backward</span>
+            </div>
+            <div class="control-item">
+                <span class="key">A / D</span>
+                <span class="action">Move Left/Right</span>
+            </div>
+            <div class="control-item">
+                <span class="key">Q / E</span>
+                <span class="action">Move Up/Down</span>
+            </div>
+            <div class="control-item">
+                <span class="key">← ↑ → ↓</span>
+                <span class="action">2D movement</span>
+            </div>
+             <div class="control-item">
+                <span class="key">probe</span>
+                <span class="action">extra light point</span>
+            </div>
+            <div class="control-item">
+                <span class="key">Click</span>
+                <span class="action">Interact with Objects</span>
+            </div>
+            <div class="control-item">
+                <span class="key">Ctrl+F</span>
+                <span class="action">Search Files</span>
+            </div>
+        </div>
+<div id="navigation-ring">
+    <div id="compass-display">
+        <div id="center-pin-fixed"></div>
+        <div id="center-pin-moving"></div>
+</div>
+<div id="direction-window">
+    <div style="display: flex;">
+      <div style="width: 46px;" id="direction-text">FRONT</div>
+      <span class="movement-label">F-B</span>
+    </div>
+    <div style="display: flex;">
+      <div style="width: 46px;" id="degree-text">0.0°</div>
+      <span id="forward-movement" class="forward-movement">0.0</span>
+    </div>
+    <div style="display: flex;">
+      <div style="width: 46px;" id="pitch-display" class="pitch-display">0°</div>   
+      <span id="vertical-movement" class="vertical-movement">0.0</span>
+    </div>
+        <div id="vertical-compass" class="vertical-compass">
+            <div class="vertical-needle"></div>
+            <div class="vertical-indicator up">↑</div>
+            <div class="vertical-indicator down">↓</div>
+        </div>
+    </div>
+</div>
+<audio id="water-audio" loop>
+    <source src="audio/2.mp3" type="audio/mpeg">
+</audio>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.17/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script src="js/probe.js"></script>
+    <script src="js/loadingtext.js"></script>
+    <script src="js/anti_lag.js"></script>
+    <script src="js/ring.js"></script>
+<script type="module">
+    import { getFileType, generateDescription, getColorForExtension, getFileIcon } from './js/ext.js';
+        class FileExplorer {
+  constructor() {
+        this.hasInitialized = false;
+        this.surfaceElement = null;        
+        this.baseUrl = window.location.origin;
+        this.apiBase = this.baseUrl;
+        this.moveState = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        };
+        document.body.style.overflow = 'hidden';
+        this.init();
+        this.meteors = new THREE.Group();
+        this.meteors.userData = { isMeteors: true };
+        this.scene.add(this.meteors);
+        this.lastMeteorTime = null;
+        this.searchInterface = new SearchInterface(this);
+        this.autoFocus = new AutoFocusController(this);
+        this.probe = new AnglerFish(this);
+        this.creatingObjects = false;
+        this.loadingText = new LoadingText('loading-text', {
+            text: 'Loading...',
+            speed: 80,
+            delay: 70,
+            cursor: '_'
+        });
+        this.createLights();
+        this.createSpaceBackground();
+        this.createBackgroundLayers();
+        this.fileObjects = new THREE.Group();
+        this.scene.add(this.fileObjects);
+        this.depthLevel = 0;
+        this.maxDepth = 5;
+        this.currentPath = '';
+        this.pathHistory = [];
+        this.hologramVisible = false;
+        this.hologramTimeout = null;
+        this.hologramPosition = new THREE.Vector3();
+        this.nameLabels = [];
+        this.updateSpaceVisibility();
+        this.spaceTextureHistory = [];
+        this.currentSpaceTextureIndex = 0;
+     setTimeout(() => {
+     this.initializeDOMElements();    
+    const closeHologram = document.getElementById('close-hologram');
+    const backButton = document.getElementById('back-button');
+    const retryButton = document.getElementById('retry-button');    
+    if (closeHologram) {
+        closeHologram.addEventListener('click', () => {
+            this.hideHologram();
+        });
+    }
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            this.goBack();
+        });
+    }
+    if (retryButton) {
+        retryButton.addEventListener('click', () => {
+            this.connectToServer();
+        });
+    }
+    this.setupEventListeners();
+    this.navigationRing = initNavigationRing(this);
+    if (this.loadingText) {
+        this.loadingText.start();
+    }    
+    setTimeout(() => {
+        this.connectToServer();
+    }, 500);
+}, 100);
+        setTimeout(() => {
+            this.waterAudio = document.getElementById('water-audio');
+            if (this.waterAudio) {
+                this.waterAudio.volume = 0.3;
+                this.waterAudio.loop = true;
+                const playAudio = () => {
+                    const playPromise = this.waterAudio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                            setTimeout(playAudio, 1000);
+                        });
+                    }
+                };
+                playAudio();
+            }
+        }, 100);        
+        window.fileExplorerInstance = this;
+        this.antiLagSystem = initAntiLagSystem(this);
+    }
+init() {
+    if (this._initialized) return;
+    this._initialized = true;
+    
+    console.log('Initializing scene...');
+    this.renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        alpha: false
+    });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.setClearColor(0x000011, 1);
+    document.getElementById('canvas-container').appendChild(this.renderer.domElement);
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x000011);
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    this.camera.position.set(0, 8, 25);    
+    this.createSpaceBackground();    
+    this.createLights();    
+    this.createBackgroundLayers();    
+    this.fileObjects = new THREE.Group();
+    this.scene.add(this.fileObjects);    
+    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
+    this.meteors = new THREE.Group();
+    this.meteors.userData = { isMeteors: true };
+    this.scene.add(this.meteors);
+    this.lastMeteorTime = null;
+    this.setupKeyboardControls();
+    this.setupClickHandlers();    
+    console.log('Scene initialization complete');
+}
+initializeDOMElements() {
+    try {
+        this.surfaceElement = document.getElementById('surface');
+        if (this.surfaceElement) {
+            this.surfaceElement.style.opacity = '0';
+            this.surfaceElement.style.background = 'transparent';
+        }
+const backButton = document.getElementById('back-button');
+if (backButton) {
+    backButton.style.display = 'flex';
+    backButton.style.visibility = 'visible';
+    backButton.style.opacity = '1';
+    backButton.classList.remove('available');
+}
+        const loadingScreen = document.getElementById('loading-screen');
+        const statusMessage = document.getElementById('status-message');        
+        if (loadingScreen) {
+            loadingScreen.style.display = 'flex';
+        }
+        if (statusMessage) {
+            statusMessage.style.display = 'block';
+        }        
+        this.setupControlsPanel();
+    } catch (error) {
+        console.warn('Error initializing DOM elements:', error);
+        setTimeout(() => this.initializeDOMElements(), 200);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setupControlsPanel() {
+    setTimeout(() => {
+        const controlsButton = document.getElementById('controls-shift-button');
+        const controlsPanel = document.getElementById('controls-panel');
+        const closeButton = document.getElementById('close-controls');
+        
+        if (!controlsButton || !controlsPanel || !closeButton) {
+            console.warn('Controls panel elements not found, retrying...');
+            setTimeout(() => this.setupControlsPanel(), 100);
+            return;
+        }
+        
+        
+        controlsButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            controlsPanel.classList.toggle('show');
+        });
+        
+        
+        closeButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            controlsPanel.classList.remove('show');
+        });
+        
+        
+        document.addEventListener('click', (e) => {
+            if (!controlsPanel.contains(e.target) && !controlsButton.contains(e.target)) {
+                controlsPanel.classList.remove('show');
+            }
+        });
+        
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && controlsPanel.classList.contains('show')) {
+                controlsPanel.classList.remove('show');
+            }
+        });
+        
+        console.log('Controls panel initialized successfully');
+    }, 100);
+}
+setupEventListeners() {
+   window.addEventListener('keydown', (e) => {
+    if (e.key === 'F1' || (e.ctrlKey && e.key === 'f')) {
+        e.preventDefault();
+        if (this.probe && this.probe.searchAssistant) {
+            this.probe.searchAssistant.show();
+        }
+    }
+});
+
+window.addEventListener('load', () => {
+    if (window.fileExplorerInstance) return;
+    window.fileExplorerInstance = new FileExplorer();
+});
+    document.getElementById('close-hologram').addEventListener('click', () => {
+        this.hideHologram();
+    });    
+    document.getElementById('back-button').addEventListener('click', () => {
+        this.goBack();
+    });
+document.getElementById('retry-button').addEventListener('click', () => {
+    this.loadingText.setText('Retrying connection...');
+    this.loadingText.start();
+    this.connectToServer();
+});
+}
+interpolateColorComponent(comp1, comp2, factor) {
+    return comp1;
+}
+updateNebulaAnimations() {
+    
+    if (!this.nebulaLayers || !this.nebulaLayers.length) {
+        return;
+    }
+    
+    const time = Date.now() * 0.001;
+    
+    
+    this.nebulaLayers.forEach(nebula => {
+        
+        if (nebula && nebula.userData) {
+            nebula.rotation.y = nebula.userData.originalRotation + time * nebula.userData.rotationSpeed;
+            nebula.rotation.x = Math.sin(time * 0.0001) * 0.1;
+        }
+    });
+    
+    
+    if (this.starfield && this.starfield.geometry && this.starfield.geometry.attributes.size) {
+        const positions = this.starfield.geometry.attributes.position.array;
+        const sizes = this.starfield.geometry.attributes.size.array;
+        
+        for (let i = 0; i < sizes.length; i++) {
+            const twinkle = Math.sin(time * 2 + i * 0.1) * 0.5 + 0.5;
+            sizes[i] = this.starfield.geometry.attributes.size.array[i] * (0.8 + twinkle * 0.4);
+        }
+        
+        this.starfield.geometry.attributes.size.needsUpdate = true;
+    }
+}
+updateSurfaceElement(angleDegrees, intensity) {
+    if (!this.surfaceElement) return;
+    let surfaceOpacity = 0;
+    if (angleDegrees <= 45) {
+        surfaceOpacity = 1 - (angleDegrees / 45);
+    } else if (angleDegrees <= 90) {
+        surfaceOpacity = 1 - ((angleDegrees - 45) / 45);
+    }
+    this.surfaceElement.style.opacity = surfaceOpacity;
+    const sunRaysElement = document.getElementById('sun-rays');
+    if (sunRaysElement) {
+        sunRaysElement.style.opacity = surfaceOpacity * 0.8;
+    }
+}
+createBackgroundLayers() {
+    this.backgroundLayers = new THREE.Group();
+    this.scene.add(this.backgroundLayers);
+    this.createFloatingBubbles(50, 0xffffff, 0.8, 5, 20, 10, 50);
+    this.lastCameraPosition = this.camera.position.clone();
+    this.surfaceElement = document.getElementById('surface');
+}
+createBubbleLayer(count, color, opacity, minSize, maxSize, minDistance, maxDistance, minSpeed, maxSpeed) {
+    
+    const backgroundGroup = new THREE.Group();
+    backgroundGroup.userData = { parallaxFactor: 0.01, isBackground: true };
+    
+    
+    const geometry = new THREE.SphereGeometry(500, 60, 40);
+    geometry.scale(-1, 1, 1); 
+    
+    
+    const textureLoader = new THREE.TextureLoader();
+    const spaceTexture = textureLoader.load('space.jpg');
+    
+    const material = new THREE.MeshBasicMaterial({
+        map: spaceTexture,
+        side: THREE.BackSide,
+        transparent: true,
+        opacity: 0.9
+    });
+    
+    const spaceSphere = new THREE.Mesh(geometry, material);
+    backgroundGroup.add(spaceSphere);
+    
+    this.backgroundLayers.add(backgroundGroup);
+}
+createParticleLayer(count, color, opacity, minSize, maxSize, minDistance, maxDistance) {
+    const starsGroup = new THREE.Group();
+    starsGroup.userData = { parallaxFactor: 0.05, isStars: true };
+    
+    for (let i = 0; i < count; i++) {
+        const size = minSize + Math.random() * (maxSize - minSize);
+        const geometry = new THREE.SphereGeometry(size * 0.02, 16, 16);
+        
+        
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: opacity,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.5
+        });
+        
+        const star = new THREE.Mesh(geometry, material);
+        
+        
+        const radius = minDistance + Math.random() * (maxDistance - minDistance);
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        
+        star.position.set(
+            radius * Math.sin(phi) * Math.cos(theta),
+            radius * Math.sin(phi) * Math.sin(theta),
+            radius * Math.cos(phi)
+        );
+        
+        
+        star.userData = {
+            originalOpacity: opacity,
+            blinkSpeed: 0.5 + Math.random() * 2,
+            blinkOffset: Math.random() * Math.PI * 2,
+            intensity: 0.3 + Math.random() * 0.7
+        };
+        
+        starsGroup.add(star);
+    }
+    
+    this.backgroundLayers.add(starsGroup);
+}
+createLargeElements(count, color, opacity, minSize, maxSize, minDistance, maxDistance) {
+    
+    const dustGroup = new THREE.Group();
+    dustGroup.userData = { parallaxFactor: 0.08, isSpaceDust: true };
+    
+    
+    const dustGeometry = new THREE.BufferGeometry();
+    const dustVertices = [];
+    const dustColors = [];
+    
+    for (let i = 0; i < count * 100; i++) { 
+        const radius = minDistance + Math.random() * (maxDistance - minDistance);
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        
+        dustVertices.push(
+            radius * Math.sin(phi) * Math.cos(theta),
+            radius * Math.sin(phi) * Math.sin(theta),
+            radius * Math.cos(phi)
+        );
+        
+        
+        dustColors.push(0.7 + Math.random() * 0.3); 
+        dustColors.push(0.8 + Math.random() * 0.2); 
+        dustColors.push(1.0); 
+    }
+    
+    dustGeometry.setAttribute('position', new THREE.Float32BufferAttribute(dustVertices, 3));
+    dustGeometry.setAttribute('color', new THREE.Float32BufferAttribute(dustColors, 3));
+    
+    const dustMaterial = new THREE.PointsMaterial({
+        size: 0.5,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.6,
+        sizeAttenuation: true
+    });
+    
+    const dustParticles = new THREE.Points(dustGeometry, dustMaterial);
+    dustGroup.add(dustParticles);
+    
+    dustGroup.userData.particles = dustParticles;
+    this.backgroundLayers.add(dustGroup);
+}
+updateParticles() {
+    
+    if (!this.particles || !this.particles.children) return;
+    
+    
+    this.updateMeteors();
+    
+    
+    
+    if (this.backgroundLayers && this.backgroundLayers.children) {
+        this.backgroundLayers.children.forEach(layer => {
+            if (layer.userData.isStars && layer.children) {
+                const time = Date.now() * 0.001;
+                layer.children.forEach(star => {
+                    if (star && star.userData && star.material) {
+                        const blink = Math.sin(time * star.userData.blinkSpeed + star.userData.blinkOffset) * 0.3 + 0.7;
+                        star.material.opacity = star.userData.originalOpacity * blink;
+                        if (star.material.emissiveIntensity !== undefined) {
+                            star.material.emissiveIntensity = star.userData.intensity * blink;
+                        }
+                    }
+                });
+            }
+        });
+    }
+}
+updateStarfieldVisibility(depthLevel, isBackNavigation = false) {
+    if (!this.starfield) return;
+    
+    
+    let starVisibility;
+    
+    if (isBackNavigation) {
+        
+        starVisibility = Math.min(1, (this.maxDepth - depthLevel) / this.maxDepth);
+    } else {
+        
+        starVisibility = Math.max(0, 1 - (depthLevel / this.maxDepth));
+    }
+    
+    
+    if (depthLevel >= 9) {
+        starVisibility = 0;
+    }
+    
+    
+    this.starfield.visible = starVisibility > 0;
+    this.starfield.material.opacity = starVisibility;
+    
+    
+    const sizes = this.starfield.geometry.attributes.size.array;
+    const originalSizes = this.starfield.geometry.attributes.size.originalArray;
+    
+    if (originalSizes && sizes.length === originalSizes.length) {
+        for (let i = 0; i < sizes.length; i++) {
+            sizes[i] = originalSizes[i] * starVisibility;
+        }
+        this.starfield.geometry.attributes.size.needsUpdate = true;
+    }
+}
+spawnMeteor() {
+    if (!this.meteors) {
+        this.meteors = new THREE.Group();
+        this.meteors.userData = { isMeteors: true };
+        this.scene.add(this.meteors);
+    }
+    
+    
+    if (this.meteors.children.length > 0) {
+        return;
+    }
+    
+    
+    const meteorGeometry = new THREE.IcosahedronGeometry(1.2, 1);
+    
+const meteorMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0x88ffff,
+    emissiveIntensity: 2.5,
+    transparent: true,
+    opacity: 1.0,
+    roughness: 0.3,
+    metalness: 0.7
+});
+    
+    
+    const positions = meteorGeometry.attributes.position.array;
+    for (let i = 0; i < positions.length; i += 3) {
+        positions[i] += (Math.random() - 0.5) * 0.2;
+        positions[i + 1] += (Math.random() - 0.5) * 0.2;
+        positions[i + 2] += (Math.random() - 0.5) * 0.2;
+    }
+    meteorGeometry.attributes.position.needsUpdate = true;
+    
+    const meteor = new THREE.Mesh(meteorGeometry, meteorMaterial);
+    
+    
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+    
+    
+    const spawnDistance = 600;
+    const horizontalSpread = 200;
+    
+    
+    const startPosition = new THREE.Vector3();
+    startPosition.copy(this.camera.position);
+    startPosition.add(cameraDirection.clone().multiplyScalar(spawnDistance));
+    
+    
+    const rightVector = new THREE.Vector3();
+    rightVector.crossVectors(cameraDirection, this.camera.up).normalize();
+    startPosition.add(rightVector.clone().multiplyScalar((Math.random() - 0.5) * horizontalSpread));
+    
+    
+    startPosition.y += (Math.random() - 0.5) * 100;
+    
+    
+    const targetPosition = startPosition.clone();
+    const horizontalMovement = 500 + Math.random() * 300;
+    targetPosition.add(rightVector.clone().multiplyScalar(
+        Math.random() > 0.5 ? horizontalMovement : -horizontalMovement
+    ));
+    
+    
+    targetPosition.y -= 80 + Math.random() * 60;
+    
+    meteor.position.copy(startPosition);
+    
+    
+    const direction = new THREE.Vector3().subVectors(targetPosition, startPosition).normalize();
+    
+    meteor.userData = {
+        startPosition: startPosition.clone(),
+        targetPosition: targetPosition.clone(),
+        direction: direction,
+        speed: 0.3 + Math.random() * 0.2, 
+        progress: 0,
+        totalDistance: startPosition.distanceTo(targetPosition),
+        rotationSpeed: new THREE.Vector3(
+            (Math.random() - 0.5) * 0.04,
+            (Math.random() - 0.5) * 0.06,
+            (Math.random() - 0.5) * 0.03
+        ),
+        trailUpdateCounter: 0,
+        brightness: 0.8 + Math.random() * 0.2,
+        fadeStartDistance: 0.7,
+        fadeEndDistance: 0.95
+    };
+    
+    
+    this.createMeteorTrail(meteor);
+    
+    this.meteors.add(meteor);
+}
+createMeteorTrail(meteor) {
+    
+    const trailGeometry = new THREE.BufferGeometry();
+    const trailCount = 80; 
+    const positions = new Float32Array(trailCount * 3);
+    const colors = new Float32Array(trailCount * 3);
+    const sizes = new Float32Array(trailCount);
+    const alphas = new Float32Array(trailCount);
+    
+    
+    for (let i = 0; i < trailCount; i++) {
+        const progress = i / trailCount;
+        positions[i * 3] = meteor.position.x;
+        positions[i * 3 + 1] = meteor.position.y;
+        positions[i * 3 + 2] = meteor.position.z;
+        
+        
+        const colorProgress = Math.pow(progress, 0.5);
+        colors[i * 3] = 0.3 + colorProgress * 0.5;
+        colors[i * 3 + 1] = 0.8 + colorProgress * 0.2;
+        colors[i * 3 + 2] = 1.0;
+        
+        
+        const sizeProgress = 1 - progress;
+        sizes[i] = sizeProgress * 4.0; 
+        
+        
+        alphas[i] = sizeProgress * 1.2;
+    }
+    
+    trailGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    trailGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    trailGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    trailGeometry.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
+    
+    const trailMaterial = new THREE.PointsMaterial({
+        size: 1.5,
+        vertexColors: true,
+        transparent: true,
+        opacity: 1.0,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+        depthWrite: false
+    });
+    
+    const trail = new THREE.Points(trailGeometry, trailMaterial);
+    meteor.userData.trail = trail;
+    meteor.userData.trailPositions = positions;
+    meteor.userData.trailColors = colors;
+    meteor.userData.trailSizes = sizes;
+    meteor.userData.trailAlphas = alphas;
+    meteor.userData.trailIndex = 0;
+    meteor.userData.trailCount = trailCount;
+    
+    this.meteors.add(trail);
+}
+updateMeteorTrail(meteor) {
+    if (!meteor.userData.trail || !meteor.userData.trailPositions) return;
+    
+    const trail = meteor.userData.trail;
+    const positions = meteor.userData.trailPositions;
+    const colors = meteor.userData.trailColors;
+    const sizes = meteor.userData.trailSizes;
+    const alphas = meteor.userData.trailAlphas;
+    const trailCount = meteor.userData.trailCount;
+    
+    
+    for (let i = trailCount - 1; i > 0; i--) {
+        positions[i * 3] = positions[(i - 1) * 3];
+        positions[i * 3 + 1] = positions[(i - 1) * 3 + 1];
+        positions[i * 3 + 2] = positions[(i - 1) * 3 + 2];
+        
+        
+        colors[i * 3] = colors[(i - 1) * 3];
+        colors[i * 3 + 1] = colors[(i - 1) * 3 + 1];
+        colors[i * 3 + 2] = colors[(i - 1) * 3 + 2];
+        
+        
+        sizes[i] = sizes[i - 1];
+        alphas[i] = alphas[i - 1];
+    }
+    
+    
+    positions[0] = meteor.position.x;
+    positions[1] = meteor.position.y;
+    positions[2] = meteor.position.z;
+    
+    
+    colors[0] = 0.9;  
+    colors[1] = 0.95; 
+    colors[2] = 1.0;  
+    sizes[0] = 4.0;   
+    alphas[0] = 1.5;  
+    
+    
+    trail.geometry.attributes.position.needsUpdate = true;
+    trail.geometry.attributes.color.needsUpdate = true;
+    trail.geometry.attributes.size.needsUpdate = true;
+    
+    
+    const progress = meteor.userData.progress;
+    let trailOpacity = 1.0;
+    
+    if (progress > meteor.userData.fadeStartDistance) {
+        const fadeRange = meteor.userData.fadeEndDistance - meteor.userData.fadeStartDistance;
+        const fadeAmount = (progress - meteor.userData.fadeStartDistance) / fadeRange;
+        trailOpacity = 1.0 - Math.min(fadeAmount, 1.0);
+    }
+    
+    trail.material.opacity = trailOpacity * (meteor.userData.brightness || 1.0);
+}
+updateMeteors() {
+        if (this.depthLevel >= 9) {
+        
+        if (this.meteors) {
+            while (this.meteors.children.length > 0) {
+                const meteor = this.meteors.children[0];
+                if (meteor.userData.trail) {
+                    this.meteors.remove(meteor.userData.trail);
+                    if (meteor.userData.trail.geometry) meteor.userData.trail.geometry.dispose();
+                    if (meteor.userData.trail.material) meteor.userData.trail.material.dispose();
+                }
+                this.meteors.remove(meteor);
+                if (meteor.geometry) meteor.geometry.dispose();
+                if (meteor.material) meteor.material.dispose();
+            }
+        }
+        return; 
+    }
+      if (this.depthLevel >= 9) {
+        return;
+    }
+    
+    if (!this.meteors) return;
+    
+    const currentTime = Date.now();
+    
+    
+    if (this.meteors.children.length === 0) {
+        if (!this.lastMeteorTime || currentTime - this.lastMeteorTime > 5000) {
+            this.spawnMeteor();
+            this.lastMeteorTime = currentTime;
+        }
+    }
+    if (!this.meteors) return;
+    
+    
+    
+    if (this.meteors.children.length === 0) {
+        if (!this.lastMeteorTime || currentTime - this.lastMeteorTime > 5000) {
+            this.spawnMeteor();
+            this.lastMeteorTime = currentTime;
+        }
+    }
+    
+    for (let i = this.meteors.children.length - 1; i >= 0; i--) {
+        const obj = this.meteors.children[i];
+        
+        
+        if (!obj || obj.type === 'Points') continue;
+        
+        const meteor = obj;
+        const userData = meteor.userData;
+        
+        if (!userData) continue;
+        
+        
+        userData.progress += userData.speed / userData.totalDistance;
+        
+        
+        if (userData.progress > userData.fadeStartDistance) {
+            const fadeRange = userData.fadeEndDistance - userData.fadeStartDistance;
+            const fadeAmount = (userData.progress - userData.fadeStartDistance) / fadeRange;
+            meteor.material.opacity = 1.0 - Math.min(fadeAmount, 1.0);
+        }
+        
+        if (userData.progress >= 1) {
+            
+            if (userData.trail) {
+                this.meteors.remove(userData.trail);
+            }
+            this.meteors.remove(meteor);
+            continue;
+        }
+        
+        
+        const currentPosition = new THREE.Vector3()
+            .lerpVectors(userData.startPosition, userData.targetPosition, userData.progress);
+        
+        
+        const curveIntensity = Math.sin(userData.progress * Math.PI) * 40;
+        currentPosition.y -= curveIntensity * 0.2;
+        
+        meteor.position.copy(currentPosition);
+        
+        
+        meteor.rotation.x += userData.rotationSpeed.x;
+        meteor.rotation.y += userData.rotationSpeed.y;
+        meteor.rotation.z += userData.rotationSpeed.z;
+        
+        
+        userData.trailUpdateCounter++;
+        if (userData.trailUpdateCounter >= 1) {
+            this.updateMeteorTrail(meteor);
+            userData.trailUpdateCounter = 0;
+        }
+        
+        
+        const pulseIntensity = 1.3 + Math.sin(Date.now() * 0.01) * 0.4;
+        meteor.material.emissiveIntensity = pulseIntensity * (userData.brightness || 1.0);
+        
+        
+        const sizePulse = 1 + Math.sin(Date.now() * 0.008) * 0.1;
+        meteor.scale.set(sizePulse, sizePulse, sizePulse);
+    }
+}
+createBubbleClusters(count, color, opacity, minSize, maxSize, minDistance, maxDistance) {
+    
+    const connectionsGroup = new THREE.Group();
+    connectionsGroup.userData = { parallaxFactor: 0.03, isConnections: true };
+    
+    
+    connectionsGroup.userData.connections = [];
+    connectionsGroup.userData.lines = [];
+    
+    this.backgroundLayers.add(connectionsGroup);
+    this.connectionsGroup = connectionsGroup;
+}
+createFloatingBubbles(count, color, opacity, minSize, maxSize, minDistance, maxDistance) {
+    
+    
+    const futureGroup = new THREE.Group();
+    futureGroup.userData = { parallaxFactor: 0.1, isFuture: true };
+    
+    
+    console.log('Future space effects group created - ready for implementation');
+    
+    this.backgroundLayers.add(futureGroup);
+}
+updateConnectionLines() {
+    if (!this.connectionsGroup || this.fileObjects.children.length < 2) return;
+    
+    
+    this.connectionsGroup.userData.lines.forEach(line => {
+        this.connectionsGroup.remove(line);
+    });
+    this.connectionsGroup.userData.lines = [];
+    
+    
+    const filePositions = [];
+    this.fileObjects.children.forEach(child => {
+        filePositions.push(child.position.clone());
+    });
+    
+    
+    for (let i = 0; i < filePositions.length; i++) {
+        const nextIndex = (i + 1) % filePositions.length;
+        
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+            filePositions[i],
+            filePositions[nextIndex]
+        ]);
+        
+        const material = new THREE.LineBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.3,
+            linewidth: 1
+        });
+        
+        const line = new THREE.Line(geometry, material);
+        this.connectionsGroup.userData.lines.push(line);
+        this.connectionsGroup.add(line);
+    }
+}
+updateBackgroundParallax() {
+    const cameraMovement = new THREE.Vector3().subVectors(
+        this.camera.position, 
+        this.lastCameraPosition
+    );
+    this.backgroundLayers.children.forEach(layer => {
+        const parallaxFactor = layer.userData.parallaxFactor;
+        layer.position.x -= cameraMovement.x * parallaxFactor * 1.5;
+        layer.position.y -= cameraMovement.y * parallaxFactor * 1.2;
+        layer.position.z -= cameraMovement.z * parallaxFactor * 1.5;
+        const time = Date.now() * 0.001;
+        layer.children.forEach(element => {
+            if (layer.userData.isBubbleLayer) {
+                const factor = element.userData.movementFactor || 0.05;
+                const floatSpeed = element.userData.floatSpeed || 0.3;
+                const riseSpeed = element.userData.riseSpeed || 0.1;
+                if (element.userData.originalPosition) {
+                    element.position.x = element.userData.originalPosition.x + 
+                                       Math.sin(time * element.userData.wobbleSpeed) * element.userData.wobbleIntensity;
+                    element.position.y = element.userData.originalPosition.y + 
+                                       Math.cos(time * floatSpeed * 0.7) * 0.6 +
+                                       time * riseSpeed; 
+                    element.position.z = element.userData.originalPosition.z + 
+                                       Math.sin(time * element.userData.wobbleSpeed * 1.2) * element.userData.wobbleIntensity;
+                }
+                element.rotation.x += element.userData.rotationSpeed;
+                element.rotation.y += element.userData.rotationSpeed * 0.7;
+                if (element.position.y > 30) {
+                    element.position.y = element.userData.originalPosition.y - 40;
+                }
+            }
+            else if (layer.userData.isFloatingBubbles) {
+                element.position.y += element.userData.riseSpeed;
+                element.position.x += Math.sin(time * element.userData.wobble.speed) * element.userData.wobble.x * 0.1;
+                element.position.z += Math.cos(time * element.userData.wobble.speed) * element.userData.wobble.z * 0.1;
+                element.rotation.x += element.userData.rotationSpeed;
+                element.rotation.y += element.userData.rotationSpeed * 1.2;
+                if (element.position.y > element.userData.maxHeight) {
+                    element.position.y = element.userData.resetY;
+                    element.position.x = (Math.random() - 0.5) * 100;
+                    element.position.z = (Math.random() - 0.5) * 100;
+                }
+            }
+            else if (layer.userData.isBubbleClusters) {
+                element.userData.angle += element.userData.orbitSpeed * 0.01;
+                element.position.x = element.userData.center.x + 
+                                   Math.cos(element.userData.angle) * element.userData.radius;
+                element.position.y = element.userData.center.y + 
+                                   Math.sin(time * element.userData.floatSpeed) * 0.5;
+                element.position.z = element.userData.center.z + 
+                                   Math.sin(element.userData.angle) * element.userData.radius;
+                element.rotation.x += element.userData.rotationSpeed;
+                element.rotation.y += element.userData.rotationSpeed * 0.8;
+            }
+            else {
+                const factor = element.userData.movementFactor || 0.05;
+                if (element.userData.originalPosition) {
+                    element.position.x = element.userData.originalPosition.x + 
+                                       Math.sin(time * factor) * 0.8;
+                    element.position.y = element.userData.originalPosition.y + 
+                                       Math.cos(time * factor * 0.7) * 0.6;
+                    element.position.z = element.userData.originalPosition.z + 
+                                       Math.sin(time * factor * 1.2) * 0.8;
+                }
+                if (element.geometry.type === 'ConeGeometry' || element.geometry.type === 'CylinderGeometry') {
+                    element.rotation.y += 0.001 * factor;
+                    element.position.y += Math.sin(time * factor * 0.5) * 0.05;
+                }
+            }
+        });
+    });
+    this.updateSurfaceVisibility();
+    this.lastCameraPosition.copy(this.camera.position);
+}
+updateSpaceVisibility() {
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+    
+    
+    if (this.nebulaLayers && this.nebulaLayers.length > 0) {
+        this.updateNebulaAnimations();
+    }
+    
+
+}
+updateParticlesColor(depthColor, intensity) {
+    if (!this.particles) return;
+    const particleLightness = 1.5 - (this.depthLevel / this.maxDepth) * 0.7;
+    const particleColor = new THREE.Color(depthColor);
+    particleColor.r *= particleLightness;
+    particleColor.g *= particleLightness;
+    particleColor.b *= particleLightness;
+    this.particles.children.forEach(particle => {
+        if (particle.material) {
+            particle.material.color = particleColor;
+            particle.material.opacity = 0.4 * intensity;
+        }
+    });
+}
+updateSceneLighting(depthLevel = 0) {
+    
+    this.createLights(depthLevel);
+    
+   
+}
+createLights(depthLevel = 0) {
+    
+    let lightIntensity;
+    if (depthLevel >= 9) {
+        
+        lightIntensity = 0;
+    } else if (depthLevel >= 7) {
+        
+        lightIntensity = 0.001;
+    } else if (depthLevel >= 5) {
+        
+        lightIntensity = 0.02;
+    } else if (depthLevel >= 3) {
+        
+        lightIntensity = 0.3;
+    } else {
+        
+        lightIntensity = 3;
+    }
+
+    
+    if (this.ambientLight) {
+        this.scene.remove(this.ambientLight);
+    }
+    if (this.directionalLight) {
+        this.scene.remove(this.directionalLight);
+    }
+    if (this.hemisphereLight) {
+        this.scene.remove(this.hemisphereLight);
+    }
+
+    
+    this.ambientLight = new THREE.AmbientLight(0x80888b, lightIntensity * 0.0003);
+    this.scene.add(this.ambientLight);
+
+    
+    this.directionalLight = new THREE.DirectionalLight(0x80888b, lightIntensity);
+    this.directionalLight.position.set(50, 50, 50);
+    this.directionalLight.castShadow = true;
+    
+    
+    this.directionalLight.shadow.mapSize.width = 2048;
+    this.directionalLight.shadow.mapSize.height = 2048;
+    this.directionalLight.shadow.camera.near = 0.5;
+    this.directionalLight.shadow.camera.far = 500;
+    this.directionalLight.shadow.camera.left = -100;
+    this.directionalLight.shadow.camera.right = 100;
+    this.directionalLight.shadow.camera.top = 100;
+    this.directionalLight.shadow.camera.bottom = -100;
+    
+    this.scene.add(this.directionalLight);
+
+    
+    this.hemisphereLight = new THREE.HemisphereLight(
+        0x4488ff, 
+        0x002244, 
+        lightIntensity * 1
+    );
+    this.scene.add(this.hemisphereLight);
+
+    
+    
+    this.filePointLight = new THREE.PointLight(0x88aaff, lightIntensity * 0.1, 100);
+    this.filePointLight.position.set(0, 10, 0);
+    this.scene.add(this.filePointLight);
+
+    console.log(`Lights created with intensity: ${lightIntensity} for depth level: ${depthLevel}`);
+}
+updateLightingBasedOnView(angleDegrees) {
+    return; 
+}
+updateSurfaceGradient(angleDegrees, opacity, depthFactor) {
+    if (!this.surfaceElement) return;   
+   const surfaceColors = [
+        ['rgba(117, 221, 255, ', 'rgba(97, 201, 235, ', 'rgba(77, 181, 215, '],
+        ['rgba(51, 202, 255, ', 'rgba(41, 182, 235, ', 'rgba(31, 162, 215, '],
+        ['rgba(36, 196, 255, ', 'rgba(26, 176, 235, ', 'rgba(16, 156, 215, '],
+        ['rgba(23, 191, 255, ', 'rgba(13, 171, 235, ', 'rgba(3, 151, 215, '],
+        ['rgba(0, 182, 255, ', 'rgba(0, 162, 235, ', 'rgba(0, 142, 215, '],
+        ['rgba(0, 150, 209, ', 'rgba(0, 130, 189, ', 'rgba(0, 110, 169, '],
+        ['rgba(0, 117, 163, ', 'rgba(0, 97, 143, ', 'rgba(0, 77, 123, '],
+        ['rgba(0, 84, 117, ', 'rgba(0, 64, 97, ', 'rgba(0, 44, 77, '],
+        ['rgba(0, 51, 71, ', 'rgba(0, 31, 51, ', 'rgba(0, 11, 31, '],
+        ['rgba(0, 18, 26, ', 'rgba(0, 8, 16, ', 'rgba(0, 0, 6, ']
+    ];    
+    const depthLevelIndex = Math.min(this.depthLevel, surfaceColors.length - 1);
+    const colors = surfaceColors[depthLevelIndex];        
+    let gradientStops = '';    
+    const transitionIntensity = Math.min(1, this.depthLevel / 5);    
+    if (angleDegrees <= 45) {
+        gradientStops = `
+            ${colors[0]}${opacity * (0.9 * transitionIntensity)}),
+            ${colors[1]}${opacity * (0.7 * transitionIntensity)}),
+            ${colors[2]}${opacity * (0.5 * transitionIntensity)}),
+            transparent
+        `;
+    } else if (angleDegrees <= 90) {
+        const progress = (angleDegrees - 45) / 45;
+        gradientStops = `
+            ${colors[0]}${opacity * ((0.9 - progress * 0.4) * transitionIntensity)}),
+            ${colors[1]}${opacity * ((0.7 - progress * 0.4) * transitionIntensity)}),
+            ${colors[2]}${opacity * ((0.5 - progress * 0.4) * transitionIntensity)}),
+            transparent
+        `;
+    } else {
+        gradientStops = 'transparent';
+    }    
+    this.surfaceElement.style.background = `linear-gradient(to bottom, ${gradientStops})`;
+}
+interpolateColor(color1, color2, factor) {
+    const r1 = (color1 >> 16) & 0xff;
+    const g1 = (color1 >> 8) & 0xff;
+    const b1 = color1 & 0xff;   
+    const r2 = (color2 >> 16) & 0xff;
+    const g2 = (color2 >> 8) & 0xff;
+    const b2 = color2 & 0xff;
+    const r = Math.round(r1 + (r2 - r1) * factor);
+    const g = Math.round(g1 + (g2 - g1) * factor);
+    const b = Math.round(b1 + (b2 - b1) * factor);
+    return (r << 16) | (g << 8) | b;
+}
+animateClickRotation(mesh) {
+    const originalRotation = mesh.rotation.clone();
+    const targetRotation = new THREE.Euler(
+        originalRotation.x + Math.PI * 0.5,
+        originalRotation.y + Math.PI * 0.5,
+        originalRotation.z
+    );   
+    let progress = 0;
+    const duration = 500;
+    const startTime = Date.now();
+    const animate = () => {
+        const elapsed = Date.now() - startTime;
+        progress = Math.min(elapsed / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        mesh.rotation.x = originalRotation.x + (targetRotation.x - originalRotation.x) * easeProgress;
+        mesh.rotation.y = originalRotation.y + (targetRotation.y - originalRotation.y) * easeProgress;
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    };
+    animate();
+}      
+createSpaceBackground() {
+    console.log('Creating space background...');
+    
+    
+    if (this.spaceSphere) {
+        this.scene.remove(this.spaceSphere);
+    }
+    
+    
+    const spaceGeometry = new THREE.SphereGeometry(1000, 64, 64); 
+    
+    const textureLoader = new THREE.TextureLoader();
+    
+    textureLoader.load(
+        'images/space.jpg',
+        (texture) => {
+            console.log('Space texture loaded successfully');
+            
+            
+            const spaceMaterial = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.BackSide,  
+                transparent: false,
+                opacity: 1.0,
+                depthWrite: false,    
+                depthTest: false      
+            });
+            
+            this.spaceSphere = new THREE.Mesh(spaceGeometry, spaceMaterial);
+            this.spaceSphere.renderOrder = -1; 
+            
+            
+            this.spaceSphere.position.set(0, 0, 0);
+            
+            
+            this.scene.add(this.spaceSphere);
+            
+            console.log('Space sphere added to scene (inside view)');
+            
+            
+            console.log('Space material:', {
+                side: spaceMaterial.side,
+                depthWrite: spaceMaterial.depthWrite,
+                depthTest: spaceMaterial.depthTest
+            });
+        },
+        undefined,
+        (error) => {
+            console.error('Failed to load space texture:', error);
+            
+            this.createSolidSpaceBackground();
+        }
+    );
+    
+    this.createStarfield(this.depthLevel || 0);
+}
+createSolidSpaceBackground() {
+    console.log('Creating solid space background');
+    
+    const geometry = new THREE.SphereGeometry(1000, 32, 32);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0x000011, 
+        side: THREE.BackSide,
+        depthWrite: false,
+        depthTest: false
+    });
+    
+    this.spaceSphere = new THREE.Mesh(geometry, material);
+    this.spaceSphere.renderOrder = -1;
+    this.scene.add(this.spaceSphere);
+}
+createGradientBackground() {
+    console.log('Creating gradient background fallback');
+    
+    
+    const gradientGeometry = new THREE.SphereGeometry(500, 32, 32);
+    gradientGeometry.scale(-1, 1, 1); 
+    
+    
+    const gradientMaterial = new THREE.MeshBasicMaterial({
+        color: 0x001122,
+        side: THREE.BackSide  
+    });
+    
+    this.spaceSphere = new THREE.Mesh(gradientGeometry, gradientMaterial);
+    this.scene.add(this.spaceSphere);
+}
+updateStarfieldForDepth() {
+    if (!this.starfield) return;
+    
+    
+    this.scene.remove(this.starfield);
+    if (this.starfield.geometry) this.starfield.geometry.dispose();
+    if (this.starfield.material) this.starfield.material.dispose();
+    
+    
+    this.createStarfield(this.depthLevel);
+}
+createStarfield(depthLevel = 0) {
+    console.log('Creating starfield for depth level:', depthLevel);
+    
+    const starGeometry = new THREE.BufferGeometry();
+    
+    
+    let starCount;
+    if (depthLevel >= 9) {
+        
+        starCount = 0;
+    } else if (depthLevel >= 7) {
+        
+        starCount = 1000;
+    } else if (depthLevel >= 5) {
+        
+        starCount = 3000;
+    } else if (depthLevel >= 3) {
+        
+        starCount = 5000;
+    } else {
+        
+        starCount = 8000;
+    }
+    
+    
+    if (depthLevel >= 9) {
+        
+        if (this.meteors) {
+            while (this.meteors.children.length > 0) {
+                const meteor = this.meteors.children[0];
+                if (meteor.userData.trail) {
+                    this.meteors.remove(meteor.userData.trail);
+                    if (meteor.userData.trail.geometry) meteor.userData.trail.geometry.dispose();
+                    if (meteor.userData.trail.material) meteor.userData.trail.material.dispose();
+                }
+                this.meteors.remove(meteor);
+                if (meteor.geometry) meteor.geometry.dispose();
+                if (meteor.material) meteor.material.dispose();
+            }
+        }
+        
+        this.lastMeteorTime = null;
+    }
+    
+    
+    if (starCount === 0) {
+        console.log('No stars created for depth level', depthLevel);
+        
+        if (this.starfield) {
+            this.scene.remove(this.starfield);
+            if (this.starfield.geometry) this.starfield.geometry.dispose();
+            if (this.starfield.material) this.starfield.material.dispose();
+            this.starfield = null;
+        }
+        return;
+    }
+    
+    
+    if (this.starfield) {
+        this.scene.remove(this.starfield);
+        if (this.starfield.geometry) this.starfield.geometry.dispose();
+        if (this.starfield.material) this.starfield.material.dispose();
+    }
+    
+    const positions = new Float32Array(starCount * 3);
+    const colors = new Float32Array(starCount * 3);
+    const sizes = new Float32Array(starCount);
+    const shineStates = new Float32Array(starCount);
+    const twinkleSpeeds = new Float32Array(starCount);
+
+    for (let i = 0; i < starCount; i++) {
+        
+        const radius = 400 + Math.random() * 300;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        
+        positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = radius * Math.cos(phi);
+        
+        
+        const starType = Math.random();
+        if (starType < 0.6) { 
+            colors[i * 3] = 0.9 + Math.random() * 0.1;
+            colors[i * 3 + 1] = 0.9 + Math.random() * 0.1;
+            colors[i * 3 + 2] = 1.0;
+        } else if (starType < 0.85) { 
+            colors[i * 3] = 1.0;
+            colors[i * 3 + 1] = 0.95 + Math.random() * 0.05;
+            colors[i * 3 + 2] = 0.7 + Math.random() * 0.2;
+        } else { 
+            colors[i * 3] = 1.0;
+            colors[i * 3 + 1] = 0.7 + Math.random() * 0.2;
+            colors[i * 3 + 2] = 0.5 + Math.random() * 0.2;
+        }
+        
+        
+        sizes[i] = 1.5 + Math.random() * 3;
+        
+        
+        shineStates[i] = 0;
+        twinkleSpeeds[i] = 0.5 + Math.random() * 2;
+    }
+    
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    starGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    starGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    starGeometry.setAttribute('shineState', new THREE.BufferAttribute(shineStates, 1));
+    starGeometry.setAttribute('twinkleSpeed', new THREE.BufferAttribute(twinkleSpeeds, 1));
+    
+    
+    const starMaterial = new THREE.PointsMaterial({
+        size: 2.5,
+        vertexColors: true,
+        transparent: true,
+        opacity: 1.0,
+        sizeAttenuation: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+    
+    this.starfield = new THREE.Points(starGeometry, starMaterial);
+    this.scene.add(this.starfield);
+    
+    console.log('Starfield created with', starCount, 'stars for depth level', depthLevel);
+    
+    
+    this.starfield.geometry.attributes.size.originalArray = new Float32Array(sizes);
+    this.starfield.geometry.attributes.color.originalArray = new Float32Array(colors);
+    
+    this.initEnhancedStarShineAnimation();
+}
+initEnhancedStarShineAnimation() {
+    if (!this.starfield) {
+        console.warn('No starfield to animate');
+        return;
+    }
+    
+    console.log('Initializing enhanced star shine animation...');
+    
+    
+    const geometry = this.starfield.geometry;
+    if (!geometry.attributes.shineState || !geometry.attributes.twinkleSpeed) {
+        console.error('Starfield missing required attributes');
+        return;
+    }
+
+    
+    const animateStars = () => {
+        if (!this.starfield) return;
+        
+        const time = Date.now() * 0.001;
+        const shineStates = geometry.attributes.shineState.array;
+        const twinkleSpeeds = geometry.attributes.twinkleSpeed.array;
+        const colors = geometry.attributes.color.array;
+        const originalColors = geometry.attributes.color.originalArray;
+        const sizes = geometry.attributes.size.array;
+        const originalSizes = geometry.attributes.size.originalArray;
+        
+        for (let i = 0; i < shineStates.length; i++) {
+            
+            const baseTwinkle = Math.sin(time * twinkleSpeeds[i]) * 0.3 + 0.7;
+            
+            
+            if (shineStates[i] === 0 && Math.random() < 0.005) { 
+                shineStates[i] = 1;
+                
+                geometry.attributes.shineState.userData = geometry.attributes.shineState.userData || {};
+                geometry.attributes.shineState.userData[i] = time + (0.5 + Math.random() * 2);
+            }
+            
+            
+            if (shineStates[i] === 1 && geometry.attributes.shineState.userData && 
+                geometry.attributes.shineState.userData[i] < time) {
+                shineStates[i] = 0;
+            }
+            
+            
+            if (shineStates[i] === 1) {
+                
+                const shineIntensity = 3 + Math.random() * 2;
+                const shineSize = 2 + Math.random() * 2; 
+                
+                colors[i * 3] = Math.min(1.0, originalColors[i * 3] * shineIntensity);
+                colors[i * 3 + 1] = Math.min(1.0, originalColors[i * 3 + 1] * shineIntensity);
+                colors[i * 3 + 2] = Math.min(1.0, originalColors[i * 3 + 2] * shineIntensity);
+                sizes[i] = originalSizes[i] * shineSize;
+            } else {
+                
+                colors[i * 3] = originalColors[i * 3] * baseTwinkle;
+                colors[i * 3 + 1] = originalColors[i * 3 + 1] * baseTwinkle;
+                colors[i * 3 + 2] = originalColors[i * 3 + 2] * baseTwinkle;
+                sizes[i] = originalSizes[i] * (0.8 + baseTwinkle * 0.4);
+            }
+        }
+        
+        geometry.attributes.color.needsUpdate = true;
+        geometry.attributes.size.needsUpdate = true;
+        geometry.attributes.shineState.needsUpdate = true;
+        
+        requestAnimationFrame(animateStars);
+    };
+    
+    animateStars();
+    console.log('Star shine animation started');
+}
+createNebulaLayers() {
+ 
+    this.nebulaLayers = [];
+    
+    const textureLoader = new THREE.TextureLoader();
+    
+    const nebulaConfigs = [
+        { texture: 'space0.jpg', radius: 850, opacity: 0.3, rotationSpeed: 0.0001 },
+        { texture: 'space1.jpg', radius: 850, opacity: 0.3, rotationSpeed: 0.00005 },
+        { texture: 'space2.jpg', radius: 900, opacity: 0.4, rotationSpeed: 0.00005 },
+        { texture: 'space3.jpg', radius: 950, opacity: 0.2, rotationSpeed: 0.00008 },
+        { texture: 'space4.jpg', radius: 900, opacity: 0.4, rotationSpeed: 0.00005 },
+        { texture: 'space5.jpg', radius: 900, opacity: 0.4, rotationSpeed: 0.00005 },
+        { texture: 'space6.jpg', radius: 900, opacity: 0.4, rotationSpeed: 0.00005 },
+        { texture: 'space7.jpg', radius: 900, opacity: 0.4, rotationSpeed: 0.00005 },
+        { texture: 'space8.jpg', radius: 900, opacity: 0.4, rotationSpeed: 0.00005 },
+        { texture: 'space9.jpg', radius: 900, opacity: 0.4, rotationSpeed: 0.00005 },
+        { texture: 'space10.jpg', radius: 900, opacity: 0.4, rotationSpeed: 0.00005 }
+    ];
+    
+    let loadedCount = 0;
+    
+    nebulaConfigs.forEach((config, index) => {
+        const nebulaGeometry = new THREE.SphereGeometry(config.radius, 60, 40);
+        nebulaGeometry.scale(-1, 1, 1);
+        
+        textureLoader.load(
+            config.texture,
+            (nebulaTexture) => {
+                nebulaTexture.wrapS = THREE.RepeatWrapping;
+                nebulaTexture.wrapT = THREE.RepeatWrapping;
+                
+              
+const nebulaMaterial = new THREE.MeshBasicMaterial({
+    map: nebulaTexture,
+    side: THREE.BackSide,  
+    transparent: true,
+    opacity: config.opacity,
+    blending: THREE.AdditiveBlending
+});
+                
+                const nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
+                nebula.userData = {
+                    rotationSpeed: config.rotationSpeed,
+                    originalRotation: Math.random() * Math.PI * 2
+                };
+                
+                this.scene.add(nebula);
+                this.nebulaLayers.push(nebula);
+                
+                loadedCount++;
+                
+                if (loadedCount === nebulaConfigs.length) {
+                    this.updateSpaceVisibility();
+                }
+            },
+            undefined,
+            (error) => {
+                console.warn('Failed to load nebula texture:', config.texture);
+                
+                const nebulaMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x1a1a2e,
+                    side: THREE.BackSide,
+                    transparent: true,
+                    opacity: config.opacity * 0.5,
+                    blending: THREE.AdditiveBlending
+                });
+                
+                const nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
+                nebula.userData = {
+                    rotationSpeed: config.rotationSpeed,
+                    originalRotation: Math.random() * Math.PI * 2
+                };
+                
+                this.scene.add(nebula);
+                this.nebulaLayers.push(nebula);
+                
+                loadedCount++;
+                
+                if (loadedCount === nebulaConfigs.length) {
+                    this.updateSpaceVisibility();
+                }
+            }
+        );
+    });
+}
+updateNebulaAnimations() {
+    
+    if (!this.nebulaLayers || !this.nebulaLayers.length) {
+        return;
+    }
+    
+    const time = Date.now() * 0.001;
+    
+    
+    this.nebulaLayers.forEach(nebula => {
+        nebula.rotation.y = nebula.userData.originalRotation + time * nebula.userData.rotationSpeed;
+        nebula.rotation.x = Math.sin(time * 0.0001) * 0.1;
+    });
+    
+    
+    if (this.starfield) {
+        const positions = this.starfield.geometry.attributes.position.array;
+        const sizes = this.starfield.geometry.attributes.size.array;
+        
+        for (let i = 0; i < sizes.length; i++) {
+            const twinkle = Math.sin(time * 2 + i * 0.1) * 0.5 + 0.5;
+            sizes[i] = this.starfield.geometry.attributes.size.array[i] * (0.8 + twinkle * 0.4);
+        }
+        
+        this.starfield.geometry.attributes.size.needsUpdate = true;
+    }
+}
+debugScene() {
+    console.log('Scene children:', this.scene.children);
+    console.log('Space sphere exists:', !!this.spaceSphere);
+    console.log('Starfield exists:', !!this.starfield);
+    console.log('Nebula layers:', this.nebulaLayers ? this.nebulaLayers.length : 0);
+    console.log('Renderer clear color:', this.renderer.getClearColor());
+    console.log('Scene background:', this.scene.background);
+}
+async connectToServer() {
+    
+    const statusMessage = document.getElementById('status-message');
+    const depthIndicator = document.getElementById('depth-indicator');
+    const pathDisplay = document.getElementById('path-display');
+    const backButton = document.getElementById('back-button');
+    const controlsHelp = document.getElementById('controls-help');
+    const errorMessage = document.getElementById('error-message');
+    
+    
+    if (statusMessage) {
+        statusMessage.style.display = 'block';
+    }
+    
+    if (depthIndicator) {
+        depthIndicator.style.display = 'none';
+    }
+    
+    if (pathDisplay) {
+        pathDisplay.style.display = 'none';
+    }
+    
+  if (backButton) {
+    backButton.style.display = 'flex'; 
+    backButton.style.visibility = 'visible'; 
+    backButton.style.opacity = '1'; 
+    backButton.classList.remove('available'); 
+}
+    
+    if (controlsHelp) {
+        controlsHelp.style.display = 'none';
+    }
+    
+    if (errorMessage) {
+        errorMessage.style.display = 'none';
+    }
+    
+    try {
+        const response = await fetch(`${this.apiBase}/api/files`);
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        
+        if (this.loadingText) {
+            this.loadingText.setText('Connected');
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        
+        if (controlsHelp) {
+            controlsHelp.style.display = 'block';
+        }
+        
+        if (depthIndicator) {
+            depthIndicator.style.display = 'block';
+        }
+        
+        if (pathDisplay) {
+            pathDisplay.style.display = 'block';
+        }
+        
+        
+        if (backButton) {
+            backButton.style.display = 'flex';
+            backButton.classList.remove('available');
+        }
+        
+     
+const currentPathElement = document.getElementById('current-path');
+if (currentPathElement) {
+    currentPathElement.textContent = 'Portfolio';
+}
+        
+        this.depthLevel = 0;
+        
+        this.updateSceneLighting(0);
+        
+        this.createStarfield(0);
+        this.currentPath = '';
+        this.pathHistory = [];
+        this.spaceTextureHistory = [];
+        this.currentSpaceTextureIndex = 0;
+        
+        
+        this.updateNebulaLayers(0, false);
+        
+        this.clearFileObjects();
+        this.createFileObjects(data.items || []);
+        this.animate();
+        
+        setTimeout(() => {
+            if (this.autoFocus && this.depthLevel === 0 && this.fileObjects && this.fileObjects.children.length > 0) {
+                if (!this.autoFocus.hasFocused) {
+                    this.autoFocus.checkAndFocus();
+                }
+            } else {
+                if (statusMessage) {
+                    statusMessage.style.display = 'none';
+                }
+            }
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Error connecting to server:', error);
+        
+        if (this.loadingText) {
+            this.loadingText.setText('Connection failed. Retrying...');
+        }
+        
+        setTimeout(() => {
+            if (statusMessage) {
+                statusMessage.style.display = 'none';
+            }
+            this.showError("Could not connect to server: " + error.message);
+            
+            if (this.loadingText) {
+                this.loadingText.complete();
+            }
+        }, 1500);
+    }
+}
+createFileObjects(items) {
+    
+    if (this.antiLagSystem && this.antiLagSystem.createPaginatedFileObjects) {
+        this.antiLagSystem.createPaginatedFileObjects(items);
+    } else {
+        
+        this.clearFileObjects();    
+        if (!items || items.length === 0) {
+            this.showError("No files found in the directory.");
+            return;
+        }
+        
+        const radius = 10;
+        const angleStep = (Math.PI * 2) / items.length;
+        
+        items.forEach((item, index) => {
+            const angle = index * angleStep;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const y = Math.random() * 8 - 4;
+            this.createFileObject(item, x, y, z);
+        });
+        
+const backButton = document.getElementById('back-button');
+const isAvailable = (this.currentPath !== '' || this.pathHistory.length > 0);
+
+if (backButton) {
+    if (isAvailable) {
+        backButton.classList.add('available');
+    } else {
+        backButton.classList.remove('available');
+    }
+    backButton.style.display = 'flex'; 
+}
+        const depthText = this.depthLevel === 0 ? "Meteor Veil" :
+                          this.depthLevel === 1 ? "Ignition Bloom" :
+                          this.depthLevel === 2 ? "Emerald Drift" :
+                          this.depthLevel === 3 ? "Milkyway Threshold" :
+                          this.depthLevel === 4 ? "Chromatic Surge" :
+                          this.depthLevel === 5 ? "Fading Echo" :
+                          this.depthLevel === 6 ? "Halo Formation" :
+                          this.depthLevel === 7 ? "Golden Pulse" :
+                          this.depthLevel === 8 ? "Tornado Crown" :
+                          this.depthLevel === 9 ? "Black Hole Choir" :
+                          this.depthLevel === 10 ? "White Dwarf Passage" : "Beyond the Rift";
+
+        document.getElementById('depth-indicator').textContent = `Depth: ${depthText}`;
+    }
+}
+cleanupPagination() {
+    if (this.antiLagSystem) {
+        this.antiLagSystem.cleanup();
+    }
+}
+clearFileObjects() {
+    while (this.fileObjects.children.length > 0) {
+        const child = this.fileObjects.children[0];        
+        if (child.userData) {
+            for (const key in child.userData) {
+                if (child.userData[key] && typeof child.userData[key].dispose === 'function') {
+                    child.userData[key].dispose();
+                }
+            }
+        }        
+        this.fileObjects.remove(child);
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+            if (Array.isArray(child.material)) {
+                child.material.forEach(material => material.dispose());
+            } else {
+                child.material.dispose();
+            }
+        }
+    }    
+    this.clearNameLabels();
+}
+hideLoadingWindow() {
+    const loadingWindow = document.getElementById('claymation-loading-window');
+    if (loadingWindow) {
+        loadingWindow.style.display = 'none';
+    }
+}
+createFileObject(item, x, y, z) {
+    let geometry, material;
+    
+    if (item.is_dir) {
+        
+        geometry = new THREE.SphereGeometry(1, 32, 32); 
+        
+        let folderColor = 0xC0C0C0; 
+        const startingNumberMatch = item.name.match(/^(\d+)/);
+        if (startingNumberMatch) {
+            const numberValue = parseInt(startingNumberMatch[1]);            
+            if (numberValue >= 10) {
+                folderColor = 0x990000; 
+            } else if (numberValue >= 1) {
+                const intensity = numberValue / 9;
+                folderColor = this.interpolateColor(0xffa500, 0xff0000, intensity);
+            }
+        }
+        
+        material = new THREE.MeshStandardMaterial({ 
+            color: folderColor,
+            roughness: 0.3,
+            metalness: 0.7,
+            transparent: false,
+            opacity: 1.0
+        });
+        
+        const folderSphere = new THREE.Mesh(geometry, material);
+        folderSphere.position.set(x, y, z);
+        
+        
+        this.createSaturnRing(folderSphere, folderColor);
+        
+        folderSphere.castShadow = true;
+        folderSphere.receiveShadow = true;
+        folderSphere.userData = {
+            itemData: item,
+            clickable: true,
+            isFolder: true
+        };
+        
+        this.fileObjects.add(folderSphere);
+        this.setupFloatingAnimation(folderSphere, x, y, z);
+        this.createNameLabel(folderSphere, item);
+        
+        return folderSphere;
+        
+    } else {
+        
+       const geometry = new THREE.IcosahedronGeometry(0.6, 0); 
+ 
+        
+        const fileColor = getColorForExtension(item.name);
+        material = new THREE.MeshStandardMaterial({ 
+            color: fileColor,
+            roughness: 0.4,
+            metalness: 0.6,
+            transparent: false,
+            opacity: 1.0
+        });
+        
+        const fileSphere = new THREE.Mesh(geometry, material);
+        fileSphere.position.set(x, y, z);
+        
+        fileSphere.castShadow = true;
+        fileSphere.receiveShadow = true;
+        fileSphere.userData = {
+            itemData: item,
+            clickable: true,
+            isFolder: false
+        };
+        
+        this.fileObjects.add(fileSphere);
+        this.setupFloatingAnimation(fileSphere, x, y, z);
+        this.createNameLabel(fileSphere, item);
+        
+        return fileSphere;
+    }
+}
+createSaturnRing(parentSphere, baseColor) {
+    
+    const ringGeometry = new THREE.TorusGeometry(1.8, 0.15, 16, 100); 
+    const ringMaterial = new THREE.MeshStandardMaterial({
+        color: baseColor,
+        roughness: 0.5,
+        metalness: 0.8,
+        transparent: true,
+        opacity: 0.7,
+        side: THREE.DoubleSide
+    });
+    
+    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+    
+    
+    ring.rotation.x = Math.PI / 2; 
+    
+    
+    const innerRingGeometry = new THREE.TorusGeometry(1.5, 0.08, 12, 100); 
+    const innerRingMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.3,
+        metalness: 0.9,
+        transparent: true,
+        opacity: 0.5
+    });
+    
+    const innerRing = new THREE.Mesh(innerRingGeometry, innerRingMaterial);
+    innerRing.rotation.x = Math.PI / 2;
+    
+    
+    const ringGroup = new THREE.Group();
+    ringGroup.add(ring);
+    ringGroup.add(innerRing);
+    
+    
+    this.addRingParticles(ringGroup, baseColor);
+    
+    parentSphere.add(ringGroup);
+    parentSphere.userData.ringGroup = ringGroup;
+    
+    return ringGroup;
+}
+addRingParticles(ringGroup, baseColor) {
+    const particleCount = 50;
+    const particles = new THREE.Group();
+    
+    for (let i = 0; i < particleCount; i++) {
+        const angle = (i / particleCount) * Math.PI * 2;
+        const radius = 1.1 + Math.random() * 0.2;
+        
+        const particleGeometry = new THREE.SphereGeometry(0.03, 8, 8);
+        const particleMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.6 + Math.random() * 0.4
+        });
+        
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.set(
+            Math.cos(angle) * radius,
+            0,
+            Math.sin(angle) * radius
+        );
+        
+        particle.userData = {
+            originalAngle: angle,
+            orbitSpeed: 0.002 + Math.random() * 0.003,
+            pulseSpeed: 2 + Math.random() * 3,
+            pulseOffset: Math.random() * Math.PI * 2
+        };
+        
+        particles.add(particle);
+    }
+    
+    ringGroup.add(particles);
+    ringGroup.userData.particles = particles;
+}
+setupFloatingAnimation(mesh, originalX, originalY, originalZ) {
+    mesh.userData.originalPosition = new THREE.Vector3(originalX, originalY, originalZ);
+    mesh.userData.floatPhase = Math.random() * Math.PI * 2;
+    mesh.userData.floatSpeed = 0.002 + Math.random() * 0.003;
+    mesh.userData.floatAmplitude = 0.5 + Math.random() * 0.6; 
+    mesh.userData.rotationSpeed = new THREE.Vector3(
+        (Math.random() - 0.5) * 0.005,
+        (Math.random() - 0.5) * 0.008,
+        (Math.random() - 0.5) * 0.004
+    );
+    
+    
+    if (mesh.userData.isFolder) {
+        mesh.userData.orbitRadius = 0.8 + Math.random() * 0.4; 
+        mesh.userData.orbitSpeed = 0.001 + Math.random() * 0.002;
+    } else {
+        mesh.userData.bobHeight = 0.3 + Math.random() * 0.4; 
+        mesh.userData.bobSpeed = 0.003 + Math.random() * 0.004;
+    }
+}
+createNameLabel(mesh, item) {
+    const label = document.createElement('div');
+    label.className = 'name-label';
+    
+    const icon = document.createElement('span');
+    icon.className = 'file-icon';
+    icon.textContent = getFileIcon(item.name, item.is_dir);
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = item.name;
+    
+    label.appendChild(icon);
+    label.appendChild(nameSpan);
+    document.body.appendChild(label);
+    
+    this.nameLabels.push({
+        element: label,
+        mesh: mesh
+    });
+}
+interpolateColor(color1, color2, factor) {
+    const r1 = (color1 >> 16) & 0xff;
+    const g1 = (color1 >> 8) & 0xff;
+    const b1 = color1 & 0xff;   
+    const r2 = (color2 >> 16) & 0xff;
+    const g2 = (color2 >> 8) & 0xff;
+    const b2 = color2 & 0xff;
+    const r = Math.round(r1 + (r2 - r1) * factor);
+    const g = Math.round(g1 + (g2 - g1) * factor);
+    const b = Math.round(b1 + (b2 - b1) * factor);
+    return (r << 16) | (g << 8) | b;
+}
+updateNameLabels() {
+    this.nameLabels.forEach(labelData => {
+        const screenPos = this.convert3DToScreen(
+            labelData.mesh.position.x, 
+            labelData.mesh.position.y + 2, 
+            labelData.mesh.position.z
+        );       
+        labelData.element.style.left = `${screenPos.x}px`;
+        labelData.element.style.top = `${screenPos.y}px`;
+        const distance = this.camera.position.distanceTo(labelData.mesh.position);
+        const scale = Math.max(0.7, 1.5 - distance * 0.05);
+        labelData.element.style.transform = `translate(-50%, -100%) scale(${scale})`;
+        labelData.element.style.opacity = Math.max(0.3, 1 - distance * 0.05);
+        const raycaster = new THREE.Raycaster();
+        const cameraDirection = new THREE.Vector3();
+        this.camera.getWorldDirection(cameraDirection);
+        raycaster.set(this.camera.position, cameraDirection);
+        const intersects = raycaster.intersectObject(labelData.mesh);
+        if (intersects.length > 0) {
+            const distanceToObject = this.camera.position.distanceTo(intersects[0].point);
+            const distanceToLabel = this.camera.position.distanceTo(labelData.mesh.position);
+            if (distanceToObject < distanceToLabel - 0.5) {
+                labelData.element.style.visibility = 'hidden';
+            } else {
+                labelData.element.style.visibility = 'visible';
+            }
+        } else {
+            labelData.element.style.visibility = 'visible';
+        }
+    });
+}
+clearNameLabels() {
+    this.nameLabels.forEach(labelData => {
+        if (labelData.element && labelData.element.parentNode) {
+            labelData.element.parentNode.removeChild(labelData.element);
+        }
+    });    
+    this.nameLabels = [];
+}
+convert3DToScreen(x, y, z) {
+                const vector = new THREE.Vector3(x, y, z);
+                vector.project(this.camera);               
+                return {
+                    x: (vector.x * 0.5 + 0.5) * window.innerWidth,
+                    y: (-(vector.y * 0.5 + 0.5) + 1) * window.innerHeight
+                };
+            }
+async showHolographicInfo(item, mesh) {
+    this.hideHologram();    
+    this.showLoadingAnimation(mesh);    
+    this.currentHologramMesh = mesh;
+    this.hologramMeshPosition = new THREE.Vector3();
+    mesh.getWorldPosition(this.hologramMeshPosition);    
+    const hologram = document.getElementById('holographic-display');
+    const title = document.getElementById('hologram-title');
+    const nameEl = document.getElementById('info-name');
+    const typeEl = document.getElementById('info-type');
+    const pathEl = document.getElementById('info-path');
+    const descriptionEl = document.getElementById('info-description');
+    const folderContents = document.getElementById('folder-contents');
+    const folderItems = document.getElementById('folder-items');    
+    descriptionEl.innerHTML = 'Loading...';
+    folderContents.style.display = 'none';
+    const existingMedia = document.getElementById('file-media-container');
+    if (existingMedia) existingMedia.remove();    
+    title.textContent = item.is_dir ? 'Folder Information' : 'File Information';
+    nameEl.textContent = item.name;
+    typeEl.textContent = item.is_dir ? 'Folder' : getFileType(item.name);    
+    const formattedPath = this.formatPathForDisplay(item.path || '/');
+    pathEl.textContent = formattedPath;    
+    folderContents.style.display = 'none';    
+    const existingButton = document.getElementById('view-full-button');
+    if (existingButton) existingButton.remove();    
+    const existingViewer = document.getElementById('code-viewer');
+    if (existingViewer) existingViewer.remove();    
+    try {
+        if (item.is_dir) {
+            try {
+                const response = await fetch(`${this.apiBase}/api/files/${encodeURIComponent(item.path)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    folderItems.innerHTML = '';                    
+                    if (data.items && data.items.length > 0) {
+                        data.items.forEach(childItem => {
+                            const li = document.createElement('li');
+                            li.className = childItem.is_dir ? 'folder' : 'file';                            
+                            const icon = document.createElement('span');
+                            icon.className = 'file-icon';
+                            icon.textContent = getFileIcon(childItem.name, childItem.is_dir);
+                            const nameSpan = document.createElement('span');
+                            nameSpan.textContent = childItem.name;
+                            li.appendChild(icon);
+                            li.appendChild(nameSpan);
+                            folderItems.appendChild(li);
+                        });
+                        folderContents.style.display = 'block';
+                        descriptionEl.textContent = `Contains ${data.items.length} items`;
+                    } else {
+                        descriptionEl.textContent = 'Empty folder';
+                    }
+                } else {
+                    descriptionEl.textContent = 'Unable to load folder contents';
+                }
+            } catch (error) {
+                console.error('Error loading folder contents:', error);
+                descriptionEl.textContent = 'Error loading folder contents';
+            }
+        } else {
+            const extension = item.name.split('.').pop().toLowerCase();            
+            if (['docx', 'pptx', 'xlsx'].includes(extension)) {
+                await this.handleOfficeDocument(item, descriptionEl);
+            } else {
+                await this.handleRegularFile(item, descriptionEl);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading file content:', error);
+        descriptionEl.textContent = 'Error loading file content';        
+        const fallbackDesc = document.createElement('div');
+        fallbackDesc.textContent = generateDescription(item.name, false);
+        descriptionEl.appendChild(fallbackDesc);
+    } finally {
+        this.removeLoadingAnimation();
+    }
+    this.addDownloadButton(item, descriptionEl);    
+    hologram.style.display = 'block';
+    this.hologramVisible = true;
+this.preventContentCopying();
+    this.updateHologramPosition();    
+    this.setupHologramBehavior();
+}
+async handleOfficeDocument(item, descriptionEl) {
+    descriptionEl.innerHTML = '';    
+    const extension = item.name.split('.').pop().toLowerCase();
+    const fileType = getFileType(item.name);
+    const header = document.createElement('div');
+    header.style.marginBottom = '15px';
+    header.style.paddingBottom = '10px';
+    header.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';    
+    const typeInfo = document.createElement('div');
+    typeInfo.textContent = `${fileType} - Office Document`;
+    typeInfo.style.fontSize = '14px';
+    typeInfo.style.opacity = '0.8';
+    typeInfo.style.marginBottom = '5px';
+    header.appendChild(typeInfo);
+    descriptionEl.appendChild(header);
+    const descText = document.createElement('div');
+    descText.textContent = generateDescription(item.name, false);
+    descText.style.marginBottom = '15px';
+    descText.style.padding = '10px';
+    descText.style.backgroundColor = 'rgba(0, 30, 60, 0.5)';
+    descText.style.borderRadius = '5px';
+    descriptionEl.appendChild(descText);    
+    const viewButton = document.createElement('button');
+    viewButton.id = 'view-office-content';
+    viewButton.textContent = 'Extract Text Content';
+    viewButton.style.marginTop = '10px';
+    viewButton.style.padding = '8px 15px';
+    viewButton.style.backgroundColor = 'rgba(0, 119, 190, 0.3)';
+    viewButton.style.color = 'white';
+    viewButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    viewButton.style.borderRadius = '4px';
+    viewButton.style.cursor = 'pointer';
+    viewButton.style.width = '100%';    
+    viewButton.addEventListener('click', async () => {
+        viewButton.textContent = 'Processing document...';
+        viewButton.disabled = true;
+        try {
+            const response = await fetch(`${this.apiBase}/api/raw-file/${encodeURIComponent(item.path)}`);            
+            if (response.ok) {
+                const blob = await response.blob();
+                await this.convertOfficeDocument(blob, extension, item.name, descriptionEl);
+            } else {
+                throw new Error('Failed to fetch document');
+            }
+        } catch (error) {
+            console.error('Error converting document:', error);            
+            const errorMsg = document.createElement('div');
+            errorMsg.style.color = '#ff6b6b';
+            errorMsg.style.marginTop = '10px';
+            errorMsg.textContent = 'Could not process document. Please download to view.';
+            descriptionEl.appendChild(errorMsg);
+        } finally {
+            viewButton.textContent = 'Extract Text Content';
+            viewButton.disabled = false;
+        }
+    });
+    descriptionEl.appendChild(viewButton);
+}
+async convertOfficeDocument(blob, extension, filename, descriptionEl) {
+        try {
+            const loadingMsg = document.createElement('div');
+            loadingMsg.textContent = 'Extracting text content...';
+            loadingMsg.style.color = '#88ffff';
+            descriptionEl.appendChild(loadingMsg);
+            const textContent = await this.extractTextFromOfficeFile(blob, extension);            
+            descriptionEl.removeChild(loadingMsg);            
+            if (textContent) {
+                const textContainer = document.createElement('div');
+                textContainer.style.backgroundColor = 'rgba(0, 20, 40, 0.7)';
+                textContainer.style.padding = '10px';
+                textContainer.style.borderRadius = '5px';
+                textContainer.style.maxHeight = '300px';
+                textContainer.style.overflowY = 'auto';
+                textContainer.style.fontFamily = 'monospace';
+                textContainer.style.fontSize = '12px';
+                textContainer.style.whiteSpace = 'pre-wrap';
+                textContainer.textContent = textContent;                
+                descriptionEl.appendChild(textContainer);
+                const note = document.createElement('div');
+                note.style.marginTop = '10px';
+                note.style.fontSize = '11px';
+                note.style.opacity = '0.7';
+                note.textContent = 'Note: This is a text-only preview. Formatting and media are not displayed.';
+                descriptionEl.appendChild(note);
+            } else {
+                this.showOfficeConversionInfo(extension, filename, blob.size);
+            }
+        } catch (error) {
+            console.error('Error converting office document:', error);
+            if (descriptionEl.contains(loadingMsg)) {
+                descriptionEl.removeChild(loadingMsg);
+            }            
+            if (error.message.includes('File too large to extract')) {
+                const errorMsg = document.createElement('div');
+                errorMsg.style.color = '#ff6b6b';
+                errorMsg.style.marginTop = '10px';
+                errorMsg.style.padding = '10px';
+                errorMsg.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+                errorMsg.style.borderRadius = '5px';
+                errorMsg.innerHTML = `
+                    <strong>File too large to extract</strong><br>
+                    Please download the file to view its contents.
+                `;
+                descriptionEl.appendChild(errorMsg);
+            } else {
+                this.showOfficeConversionInfo(extension, filename, blob.size);
+            }
+        }
+    }
+showOfficeConversionInfo(extension, filename, size) {
+    const modal = document.createElement('div');
+    modal.id = 'office-conversion-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.width = '80%';
+    modal.style.maxWidth = '500px';
+    modal.style.backgroundColor = 'rgba(0, 20, 40, 0.95)';
+    modal.style.border = '2px solid rgba(0, 119, 190, 0.7)';
+    modal.style.borderRadius = '10px';
+    modal.style.zIndex = '1001';
+    modal.style.boxShadow = '0 0 30px rgba(0, 119, 190, 0.5)';
+    modal.style.overflow = 'hidden';
+    modal.style.padding = '20px';    
+    const header = document.createElement('h3');
+    header.textContent = 'Office Document Conversion';
+    header.style.marginTop = '0';
+    header.style.color = 'white';
+    header.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';
+    header.style.paddingBottom = '10px';    
+    const content = document.createElement('div');
+    content.style.margin = '15px 0';    
+    const message = document.createElement('p');
+    message.textContent = `For security and performance reasons, ${extension.toUpperCase()} files cannot be directly previewed in the browser.`;
+    message.style.marginBottom = '15px';
+    const options = document.createElement('div');
+    options.innerHTML = `
+        <p>You can:</p>
+        <ul style="margin-left: 20px; margin-bottom: 15px;">
+            <li>Download the file to view it locally</li>
+            <li>Convert it to PDF for browser viewing</li>
+            <li>Use online conversion tools</li>
+        </ul>
+        <p>File: ${filename} (${this.formatFileSize(size)})</p>
+    `;
+    content.appendChild(message);
+    content.appendChild(options);
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'OK';
+    closeButton.style.padding = '8px 20px';
+    closeButton.style.backgroundColor = 'rgba(0, 119, 190, 0.3)';
+    closeButton.style.color = 'white';
+    closeButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    closeButton.style.borderRadius = '4px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.float = 'right';    
+    closeButton.addEventListener('click', () => {
+        modal.remove();
+    });
+    modal.appendChild(header);
+    modal.appendChild(content);
+    modal.appendChild(closeButton);    
+    document.body.appendChild(modal);    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+async handleRegularFile(item, descriptionEl) {
+    try {
+        const response = await fetch(`${this.apiBase}/api/file-content-enhanced/${encodeURIComponent(item.path)}`);       
+        if (response.ok) {
+            const data = await response.json();
+            descriptionEl.textContent = '';            
+            if (data.type === 'text') {
+                const textContent = document.createElement('div');
+                textContent.style.backgroundColor = 'rgba(0, 20, 40, 0.7)';
+                textContent.style.padding = '10px';
+                textContent.style.borderRadius = '5px';
+                textContent.style.maxHeight = '200px';
+                textContent.style.overflowY = 'auto';
+                textContent.style.fontFamily = 'monospace';
+                textContent.style.fontSize = '12px';
+                textContent.style.whiteSpace = 'pre-wrap';
+                textContent.textContent = data.content;
+                descriptionEl.appendChild(textContent);                
+                if (data.content.length >= 2000) {
+                    const viewFullButton = document.createElement('button');
+                    viewFullButton.id = 'view-full-button';
+                    viewFullButton.textContent = 'View Full Content';
+                    viewFullButton.style.marginTop = '10px';
+                    viewFullButton.addEventListener('click', () => {
+                        this.showCodeViewer(data.content, item.name);
+                    });
+                    descriptionEl.appendChild(viewFullButton);
+                }
+            } 
+            else if (data.type === 'image') {
+                const imgContainer = document.createElement('div');
+                imgContainer.style.textAlign = 'center';
+                imgContainer.style.margin = '10px 0';
+                const img = document.createElement('img');
+                img.src = data.content;
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '300px';
+                img.style.borderRadius = '5px';
+                img.alt = item.name;
+                imgContainer.appendChild(img);
+                descriptionEl.appendChild(imgContainer);
+            }
+            else if (data.type === 'audio') {
+                const audioContainer = document.createElement('div');
+                audioContainer.style.margin = '10px 0';
+                const audio = document.createElement('audio');
+                audio.controls = true;
+                audio.src = data.content;
+                audio.style.width = '100%';
+                audioContainer.appendChild(audio);
+                descriptionEl.appendChild(audioContainer);
+            }
+            else {
+                const fileInfo = document.createElement('div');
+                fileInfo.style.marginBottom = '15px';                
+                const fileType = document.createElement('div');
+                fileType.textContent = `File type: ${data.mimetype || 'Binary file'}`;
+                fileType.style.marginBottom = '5px';
+                const fileSize = document.createElement('div');
+                fileSize.textContent = `Size: ${this.formatFileSize(data.size)}`;
+                fileSize.style.marginBottom = '10px';
+                fileSize.style.opacity = '0.8';
+                fileInfo.appendChild(fileType);
+                fileInfo.appendChild(fileSize);
+                descriptionEl.appendChild(fileInfo);
+                const message = document.createElement('div');
+                message.style.padding = '10px';
+                message.style.backgroundColor = 'rgba(0, 30, 60, 0.5)';
+                message.style.borderRadius = '5px';
+                message.style.marginBottom = '15px';                
+                if (data.mimetype === 'application/pdf') {
+                    message.textContent = 'PDF documents cannot be previewed directly. Please download to view.';
+                } else if (data.mimetype.startsWith('video/')) {
+                    message.textContent = 'Video files cannot be previewed directly. Please download to view.';
+                } else {
+                    message.textContent = 'This file type cannot be previewed directly. Please download to view.';
+                }
+                descriptionEl.appendChild(message);
+            }
+            if (descriptionEl.children.length <= 2) {
+                const descText = document.createElement('div');
+                descText.textContent = generateDescription(item.name, false);
+                descText.style.marginBottom = '15px';
+                descText.style.padding = '10px';
+                descText.style.backgroundColor = 'rgba(0, 30, 60, 0.5)';
+                descText.style.borderRadius = '5px';
+                descriptionEl.appendChild(descText);
+            }
+        } else {
+            this.showDefaultDescription(item, descriptionEl);
+        }
+    } catch (error) {
+        console.error('Error loading file content:', error);
+        this.showDefaultDescription(item, descriptionEl);
+    }
+}
+addDownloadButton(item, container) {
+    const downloadButton = document.createElement('button');
+    downloadButton.id = 'download-button';
+    downloadButton.textContent = 'Download File';
+    downloadButton.style.marginTop = '10px';
+    downloadButton.style.padding = '8px 15px';
+    downloadButton.style.backgroundColor = 'rgba(0, 119, 190, 0.3)';
+    downloadButton.style.color = 'white';
+    downloadButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    downloadButton.style.borderRadius = '4px';
+    downloadButton.style.cursor = 'pointer';
+    downloadButton.style.width = '100%';    
+    downloadButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        downloadButton.style.backgroundColor = '#ff4444';
+        downloadButton.style.color = 'white';
+        downloadButton.textContent = 'Enter code: ';        
+        const codeInput = document.createElement('input');
+        codeInput.type = 'password';
+        codeInput.style.marginLeft = '5px';
+        codeInput.style.padding = '2px';
+        codeInput.style.width = '60px';
+        codeInput.placeholder = 'psw';
+        downloadButton.innerHTML = '';
+        downloadButton.appendChild(document.createTextNode('Enter code: '));
+        downloadButton.appendChild(codeInput);
+        codeInput.focus();
+        const checkCode = (e) => {
+            if (e.key === 'Enter') {
+                if (codeInput.value === '123') {
+                    const fileUrl = `${this.apiBase}/api/raw-file/${encodeURIComponent(item.path)}`;
+                    const a = document.createElement('a');
+                    a.href = fileUrl;
+                    a.download = item.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    downloadButton.style.backgroundColor = '';
+                    downloadButton.style.color = '';
+                    downloadButton.textContent = 'Download File';
+                    downloadButton.innerHTML = 'Download File';
+                } else {
+                    codeInput.style.animation = 'shake 0.5s';
+                    setTimeout(() => {
+                        codeInput.style.animation = '';
+                        codeInput.value = '';
+                    }, 500);
+                }
+            } else if (e.key === 'Escape') {
+                downloadButton.style.backgroundColor = '';
+                downloadButton.style.color = '';
+                downloadButton.textContent = 'Download File';
+                downloadButton.innerHTML = 'Download File';
+                downloadButton.removeEventListener('keydown', checkCode);
+            }
+        };
+        codeInput.addEventListener('keydown', checkCode);
+        const cancelHandler = (e) => {
+            if (!downloadButton.contains(e.target)) {
+                downloadButton.style.backgroundColor = '';
+                downloadButton.style.color = '';
+                downloadButton.textContent = 'Download File';
+                downloadButton.innerHTML = 'Download File';
+                document.removeEventListener('click', cancelHandler);
+                codeInput.removeEventListener('keydown', checkCode);
+            }
+        };
+        setTimeout(() => {
+            document.addEventListener('click', cancelHandler);
+        }, 100);
+    });
+    container.appendChild(downloadButton);
+}
+setupHologramBehavior() {
+    this.hologramUpdateInterval = setInterval(() => {
+        if (this.hologramVisible && this.currentHologramMesh) {
+            this.updateHologramPosition();
+        }
+    }, 100);    
+    if (this.hologramTimeout) {
+        clearTimeout(this.hologramTimeout);
+    }    
+    this.hologramTimeout = setTimeout(() => {
+        if (this.hologramVisible) {
+            const distance = this.camera.position.distanceTo(this.hologramMeshPosition);
+            if (distance > 20) {
+                this.hideHologram();
+            } else {
+                this.hologramTimeout = setTimeout(() => {
+                    const newDistance = this.camera.position.distanceTo(this.hologramMeshPosition);
+                    if (newDistance > 20) {
+                        this.hideHologram();
+                    }
+                }, 2000);
+            }
+        }
+    }, 5000);
+}
+preventContentCopying() {
+    const hologram = document.getElementById('holographic-display');
+    if (!hologram) return;    
+    hologram.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });    
+    hologram.style.userSelect = 'none';
+    hologram.style.webkitUserSelect = 'none';
+    hologram.style.mozUserSelect = 'none';
+    hologram.style.msUserSelect = 'none';    
+    hologram.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        return false;
+    });    
+    hologram.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+            e.preventDefault();
+            return false;
+        }
+    });
+}
+updateHologramPosition() {
+    if (!this.hologramVisible || !this.currentHologramMesh) return;
+    const hologram = document.getElementById('holographic-display');   
+    this.currentHologramMesh.getWorldPosition(this.hologramMeshPosition);    
+    const hologramPosition = this.hologramMeshPosition.clone();
+    hologramPosition.y += 2.5;    
+    const vector = hologramPosition.clone();
+    vector.project(this.camera);    
+    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-(vector.y * 0.5 + 0.5) + 1) * window.innerHeight;
+    const hologramWidth = 350;
+    const hologramHeight = hologram.offsetHeight;    
+    const isOffScreen = (
+        x < 0 || 
+        x > window.innerWidth || 
+        y < 0 || 
+        y > window.innerHeight ||
+        vector.z > 1
+    );    
+    if (isOffScreen) {
+        hologram.style.visibility = 'hidden';        
+        const connector = document.querySelector('.hologram-connector');
+        const dot = document.querySelector('.connector-dot');        
+        if (connector) connector.style.visibility = 'hidden';
+        if (dot) dot.style.visibility = 'hidden';
+    } else {
+        hologram.style.visibility = 'visible';        
+        let finalX = x - hologramWidth / 2;
+        let finalY = y - hologramHeight - 20;
+        finalX = Math.max(10, Math.min(finalX, window.innerWidth - hologramWidth - 10));
+        finalY = Math.max(10, Math.min(finalY, window.innerHeight - hologramHeight - 10));        
+        hologram.style.left = `${finalX}px`;
+        hologram.style.top = `${finalY}px`;        
+        const distance = this.camera.position.distanceTo(hologramPosition);
+        const scale = Math.max(0.7, 1.5 - distance * 0.1);
+        const opacity = Math.max(0.8, 1 - distance * 0.07);        
+        hologram.style.transform = `scale(${scale})`;
+        hologram.style.opacity = opacity;
+        const connector = document.querySelector('.hologram-connector');
+        const dot = document.querySelector('.connector-dot');        
+        if (connector) connector.style.visibility = 'visible';
+        if (dot) dot.style.visibility = 'visible';
+        this.drawHologramConnector(this.hologramMeshPosition, finalX + hologramWidth / 2, finalY + hologramHeight);
+    }    
+    if (this.loadingAnimation) {
+        this.loadingAnimation.style.left = '50%';
+        this.loadingAnimation.style.top = '50%';
+        this.loadingAnimation.style.transform = 'translate(-50%, -50%)';
+    }
+}
+hideHologram() {
+    const hologram = document.getElementById('holographic-display');
+    if (hologram) {
+        hologram.style.display = 'none';
+    }   
+    this.hologramVisible = false;
+    this.currentHologramMesh = null;
+    this.hologramMeshPosition = null;
+    const connector = document.querySelector('.hologram-connector');
+    const dot = document.querySelector('.connector-dot');    
+    if (connector) document.body.removeChild(connector);
+    if (dot) document.body.removeChild(dot);
+    if (this.hologramUpdateInterval) {
+        clearInterval(this.hologramUpdateInterval);
+        this.hologramUpdateInterval = null;
+    }    
+    if (this.hologramTimeout) {
+        clearTimeout(this.hologramTimeout);
+        this.hologramTimeout = null;
+    }
+    this.removeLoadingAnimation();
+}
+isPointBehindCamera(point) {
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);    
+    const pointDirection = new THREE.Vector3().subVectors(point, this.camera.position).normalize();
+    return cameraDirection.dot(pointDirection) < 0;
+}
+async extractTextFromDOCX(blob) {
+    if (typeof mammoth !== 'undefined') {
+        const arrayBuffer = await blob.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return result.value;
+    } else {
+        return `DOCX Document (${this.formatFileSize(blob.size)})\n\nTo view full content, please download the file.`;
+    }
+}
+async extractTextFromPPTX(blob) {
+    return `PPTX Presentation (${this.formatFileSize(blob.size)})\n\nPresentation files cannot be previewed directly. Please download to view.`;
+}
+async extractTextFromXLSX(blob) {
+    return `XLSX Spreadsheet (${this.formatFileSize(blob.size)})\n\nSpreadsheet files cannot be previewed directly. Please download to view.`;
+}
+async extractTextFromOfficeFile(blob, extension) {
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('File too large to extract')), 5000);
+        });        
+        try {
+            const extractionPromise = (async () => {
+                if (extension === 'docx') {
+                    return await this.extractTextFromDOCX(blob);
+                } else if (extension === 'pptx') {
+                    return await this.extractTextFromPPTX(blob);
+                } else if (extension === 'xlsx') {
+                    return await this.extractTextFromXLSX(blob);
+                }
+                return null;
+            })(); 
+            return await Promise.race([extractionPromise, timeoutPromise]);
+        } catch (error) {
+            if (error.message === 'File too large to extract') {
+                throw new Error('File too large to extract. Please download the file to view its contents.');
+            }
+            console.error('Error extracting text from office file:', error);
+            return null;
+        }
+    }
+isSpecialCharacterContent(content) {
+    if (!content || content.length === 0) return false;
+    let specialCharCount = 0;
+    const sampleSize = Math.min(content.length, 1000);    
+    for (let i = 0; i < sampleSize; i++) {
+        const charCode = content.charCodeAt(i);
+        if (charCode < 32 && charCode !== 9 && charCode !== 10 && charCode !== 13) {
+            specialCharCount++;
+        }
+        else if (charCode > 126 && charCode < 160) {
+            specialCharCount++;
+        }
+    }    
+    return (specialCharCount / sampleSize) > 0.3;
+}
+hasValidFileDescription(extension) {
+    const fileType = getFileType('test.' + extension);
+    return fileType !== (extension.toUpperCase() + ' File');
+}
+showDefaultDescription(item, descriptionElement) {
+    descriptionElement.textContent = '';
+    const defaultDescription = generateDescription(item.name, false);    
+    const descText = document.createElement('div');
+    descText.textContent = defaultDescription;
+    descText.style.marginBottom = '10px';
+    descriptionElement.appendChild(descText);
+    if (defaultDescription === "Try to download instead") {
+        const gifElement = document.createElement('img');
+        gifElement.src = 'images/gif.6.gif';
+        gifElement.alt = 'Unknown file type';
+        gifElement.style.maxWidth = '100px';
+        gifElement.style.marginTop = '10px';
+        gifElement.style.borderRadius = '5px';
+        descriptionElement.appendChild(gifElement);
+    }    
+}
+formatPathForDisplay(path) {
+    if (!path || path === '' || path === '/') return 'Portfolio';
+    
+    let cleanPath = path.replace(/^\.\//, '').replace(/^\//, '');
+    
+    const displayPath = 'Portfolio/' + cleanPath;
+    
+    return displayPath;
+}
+showCodeViewer(content, filename) {
+    const existingViewer = document.getElementById('code-viewer');
+    if (existingViewer) {
+        existingViewer.remove();
+    }    
+    const codeViewer = document.createElement('div');
+    codeViewer.id = 'code-viewer';
+    codeViewer.style.position = 'fixed';
+    codeViewer.style.top = '50%';
+    codeViewer.style.left = '50%';
+    codeViewer.style.transform = 'translate(-50%, -50%)';
+    codeViewer.style.width = '80%';
+    codeViewer.style.height = '80%';
+    codeViewer.style.backgroundColor = 'rgba(0, 20, 40, 0.95)';
+    codeViewer.style.border = '2px solid rgba(0, 119, 190, 0.7)';
+    codeViewer.style.borderRadius = '10px';
+    codeViewer.style.zIndex = '1000';
+    codeViewer.style.boxShadow = '0 0 30px rgba(0, 119, 190, 0.5)';
+    codeViewer.style.overflow = 'hidden';
+    codeViewer.style.display = 'flex';
+    codeViewer.style.flexDirection = 'column';    
+    const header = document.createElement('div');
+    header.style.padding = '15px';
+    header.style.backgroundColor = 'rgba(0, 30, 60, 0.9)';
+    header.style.borderBottom = '1px solid rgba(0, 119, 190, 0.5)';
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';    
+    const title = document.createElement('h3');
+    title.textContent = filename;
+    title.style.margin = '0';
+    title.style.color = 'white';
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '×';
+    closeButton.style.background = 'none';
+    closeButton.style.border = 'none';
+    closeButton.style.color = 'white';
+    closeButton.style.fontSize = '20px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.padding = '0';
+    closeButton.style.width = '30px';
+    closeButton.style.height = '30px';
+    closeButton.style.borderRadius = '50%';
+    closeButton.addEventListener('mouseover', () => {
+        closeButton.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+    });
+    closeButton.addEventListener('mouseout', () => {
+        closeButton.style.backgroundColor = 'transparent';
+    });
+    closeButton.addEventListener('click', () => {
+        codeViewer.remove();
+    });
+    header.appendChild(title);
+    header.appendChild(closeButton);
+    const codeContent = document.createElement('textarea');
+    codeContent.value = content;
+    codeContent.style.flex = '1';
+    codeContent.style.backgroundColor = 'rgba(0, 10, 20, 0.9)';
+    codeContent.style.color = '#e0e0e0';
+    codeContent.style.border = 'none';
+    codeContent.style.padding = '15px';
+    codeContent.style.fontFamily = 'monospace';
+    codeContent.style.fontSize = '14px';
+    codeContent.style.resize = 'none';
+    codeContent.style.outline = 'none';
+    codeContent.readOnly = true;    
+    const footer = document.createElement('div');
+    footer.style.padding = '10px 15px';
+    footer.style.backgroundColor = 'rgba(0, 30, 60, 0.9)';
+    footer.style.borderTop = '1px solid rgba(0, 119, 190, 0.5)';
+    footer.style.display = 'flex';
+    footer.style.justifyContent = 'flex-end';    
+    const copyButton = document.createElement('button');
+    copyButton.textContent = 'Copy to Clipboard';
+    copyButton.style.padding = '5px 10px';
+    copyButton.style.backgroundColor = 'rgba(0, 119, 190, 0.3)';
+    copyButton.style.color = 'white';
+    copyButton.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+    copyButton.style.borderRadius = '3px';
+    copyButton.style.cursor = 'pointer';
+    copyButton.style.fontSize = '12px';
+    copyButton.addEventListener('click', () => {
+        codeContent.select();
+        document.execCommand('copy');
+        copyButton.textContent = 'Copied!';
+        setTimeout(() => {
+            copyButton.textContent = 'Copy to Clipboard';
+        }, 2000);
+    });
+    footer.appendChild(copyButton);
+    codeViewer.appendChild(header);
+    codeViewer.appendChild(codeContent);
+    codeViewer.appendChild(footer);
+    document.body.appendChild(codeViewer);
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            codeViewer.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+drawHologramConnector(meshWorldPosition, hologramCenterX, hologramBottomY) {
+    const existingConnector = document.querySelector('.hologram-connector');
+    const existingDot = document.querySelector('.connector-dot');    
+    if (existingConnector) document.body.removeChild(existingConnector);
+    if (existingDot) document.body.removeChild(existingDot);
+    const vector = meshWorldPosition.clone();
+    vector.project(this.camera);    
+    const meshScreenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
+    const meshScreenY = (-(vector.y * 0.5 + 0.5) + 1) * window.innerHeight;
+    if (vector.z > 1) {
+        return;
+    }
+    const hologram = document.getElementById('holographic-display');
+    const hologramCenterY = hologramBottomY - (hologram.offsetHeight / 2);    
+    const dx = hologramCenterX - meshScreenX;
+    const dy = hologramCenterY - meshScreenY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    const connector = document.createElement('div');
+    connector.className = 'hologram-connector';
+    connector.style.width = `${length}px`;
+    connector.style.left = `${meshScreenX}px`;
+    connector.style.top = `${meshScreenY}px`;
+    connector.style.transform = `rotate(${angle}deg)`;    
+    const dot = document.createElement('div');
+    dot.className = 'connector-dot';
+    dot.style.left = `${meshScreenX - 3}px`;
+    dot.style.top = `${meshScreenY - 3}px`;    
+    document.body.appendChild(connector);
+    document.body.appendChild(dot);
+}
+setupClickHandlers() {
+    this.renderer.domElement.addEventListener('click', (event) => {
+        const mouse = new THREE.Vector2();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;        
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, this.camera);
+        const intersects = raycaster.intersectObjects(this.fileObjects.children, true);
+        if (intersects.length > 0) {
+            const object = intersects[0].object;
+            const item = object.userData.itemData;
+            if (item.is_dir) {
+                this.navigateToPath(item.path);
+            } else {
+                this.showHolographicInfo(item, object);
+            }
+        }
+    });
+this.renderer.domElement.addEventListener('touchstart', (event) => {
+    if (event.touches.length === 1) {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const mouse = new THREE.Vector2();
+        mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, this.camera);
+        const intersects = raycaster.intersectObjects(this.fileObjects.children, true);
+        if (intersects.length > 0) {
+            const object = intersects[0].object;
+            const item = object.userData.itemData;
+            if (!item.is_dir) {
+                this.animateClickRotation(object);
+            }            
+            if (item.is_dir) {
+                this.hideHologram();
+                this.navigateToPath(item.path);
+            } else {
+                this.showHolographicInfo(item, object);
+            }
+        }
+    }
+});
+this.renderer.domElement.addEventListener('click', (event) => {
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1; 
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, this.camera);
+    const intersects = raycaster.intersectObjects(this.fileObjects.children, true);
+    if (intersects.length > 0) {
+        const object = intersects[0].object;
+        const item = object.userData.itemData;
+        if (!item.is_dir) {
+            this.animateClickRotation(object);
+        }        
+        if (item.is_dir) {
+            this.hideHologram();
+            this.navigateToPath(item.path);
+        } else {
+            this.showHolographicInfo(item, object);
+        }
+    }
+});
+}
+hideHologram() {
+    document.getElementById('holographic-display').style.display = 'none';
+    this.hologramVisible = false;
+    this.currentHologramMesh = null;
+    this.hologramMeshPosition = null;
+    const connector = document.querySelector('.hologram-connector');
+    const dot = document.querySelector('.connector-dot');    
+    if (connector) document.body.removeChild(connector);
+    if (dot) document.body.removeChild(dot);
+    if (this.hologramTimeout) {
+        clearTimeout(this.hologramTimeout);
+        this.hologramTimeout = null;
+    }
+    this.removeLoadingAnimation();
+}
+setupKeyboardControls() {
+    window.addEventListener('keydown', (e) => {
+    if (e.key === 'F1' || (e.ctrlKey && e.key === 'f')) {
+        e.preventDefault();
+        if (this.searchInterface) {
+            this.searchInterface.show();
+        }
+    }
+});
+                window.addEventListener('keydown', (event) => {
+                    switch (event.key.toLowerCase()) {
+                        case 'w':
+                        case 'arrowup':
+                            this.moveState.forward = true;
+                            break;
+                        case 's':
+                        case 'arrowdown':
+                            this.moveState.backward = true;
+                            break;
+                        case 'a':
+                        case 'arrowleft':
+                            this.moveState.left = true;
+                            break;
+                        case 'd':
+                        case 'arrowright':
+                            this.moveState.right = true;
+                            break;
+                        case 'e':
+                        case ' ':
+                            this.moveState.up = true;
+                            break;
+                        case 'q':
+                        case 'shift':
+                            this.moveState.down = true;
+                            break;
+                        case 'escape':
+                            this.hideHologram();
+                            break;
+                    }
+                });                
+                window.addEventListener('keyup', (event) => {
+
+                    switch (event.key.toLowerCase()) {
+                        case 'f1':
+
+                        case 'w':
+                        case 'arrowup':
+                            this.moveState.forward = false;
+                            break;
+                        case 's':
+                        case 'arrowdown':
+                            this.moveState.backward = false;
+                            break;
+                        case 'a':
+                        case 'arrowleft':
+                            this.moveState.left = false;
+                            break;
+                        case 'd':
+                        case 'arrowright':
+                            this.moveState.right = false;
+                            break;
+                        case 'e':
+                        case ' ':
+                            this.moveState.up = false;
+                            break;
+                        case 'q':
+                        case 'shift':
+                            this.moveState.down = false;
+                            break;
+                    }
+                });
+            }
+showLoadingAnimation(mesh) {
+  this.removeLoadingAnimation();  
+  const meshPosition = new THREE.Vector3();
+  mesh.getWorldPosition(meshPosition);  
+  const loadingContainer = document.createElement('div');
+  loadingContainer.id = 'hologram-loading';
+  loadingContainer.className = 'hologram-loading-2d';
+  loadingContainer.style.position = 'fixed';
+  loadingContainer.style.zIndex = '101';  
+  const screenPos = this.convert3DToScreen(
+    meshPosition.x, 
+    meshPosition.y + 1.5, 
+    meshPosition.z
+  );  
+  loadingContainer.style.left = `${screenPos.x}px`;
+  loadingContainer.style.top = `${screenPos.y}px`;
+  const outerCircle = document.createElement('div');
+  outerCircle.className = 'circle';
+  loadingContainer.appendChild(outerCircle);  
+  const innerCircle = document.createElement('div');
+  innerCircle.className = 'inner-circle';
+  loadingContainer.appendChild(innerCircle);  
+  const core = document.createElement('div');
+  core.className = 'core';
+  loadingContainer.appendChild(core);  
+  document.body.appendChild(loadingContainer);
+  this.loadingAnimation = loadingContainer;
+}
+removeLoadingAnimation() {
+    if (this.loadingAnimation) {
+        this.loadingAnimation.remove();
+        this.loadingAnimation = null;
+    }}
+async transitionToNewView(targetPath, isBackNavigation = false) {
+    try {
+        this.showLoadingWindow(isBackNavigation ? "Homecoming" : "Entering orbit");
+        await this.loadDirectoryContent(targetPath, isBackNavigation);        
+    } catch (error) {
+        console.error('Transition error:', error);
+        this.showError("Navigation failed: " + error.message);
+    } finally {
+        this.hideLoadingWindow();
+    }
+}
+showLoadingWindow(message = "Loading...") {
+    let loadingWindow = document.getElementById('claymation-loading-window');    
+    if (!loadingWindow) {
+        loadingWindow = document.createElement('div');
+        loadingWindow.id = 'claymation-loading-window';
+        loadingWindow.style.position = 'fixed';
+        loadingWindow.style.top = '50%';
+        loadingWindow.style.left = '50%';
+        loadingWindow.style.transform = 'translate(-50%, -50%)';
+        loadingWindow.style.backgroundColor = 'rgba(0, 30, 60, 0.95)';
+        loadingWindow.style.border = '2px solid rgba(0, 119, 190, 0.7)';
+        loadingWindow.style.borderRadius = '10px';
+        loadingWindow.style.padding = '20px';
+        loadingWindow.style.zIndex = '10000';
+        loadingWindow.style.boxShadow = '0 0 30px rgba(0, 119, 190, 0.5)';
+        loadingWindow.style.textAlign = 'center';
+        loadingWindow.style.minWidth = '200px';
+        loadingWindow.style.fontFamily = 'inherit';
+        loadingWindow.style.color = '#a0d2ff';
+        loadingWindow.style.textShadow = '0 0 5px rgba(160, 210, 255, 0.7)';        
+        document.body.appendChild(loadingWindow);
+    }
+    loadingWindow.innerHTML = `
+        <div style="margin-bottom: 15px; font-size: 18px;">${message}</div>
+        <div class="claymation-loader" style="
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            position: relative;
+        ">
+            <div style="
+                width: 100%;
+                height: 100%;
+                border: 3px solid rgba(160, 210, 255, 0.3);
+                border-top: 3px solid #a0d2ff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                box-shadow: 0 0 10px rgba(160, 210, 255, 0.5);
+            "></div>
+        </div>
+    `;    
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);    
+    loadingWindow.style.display = 'block';
+}
+easeOutBounce(t) {
+    const n1 = 7.5625;
+    const d1 = 2.75;   
+    if (t < 1 / d1) {
+        return n1 * t * t;
+    } else if (t < 2 / d1) {
+        return n1 * (t -= 1.5 / d1) * t + 0.75;
+    } else if (t < 2.5 / d1) {
+        return n1 * (t -= 2.25 / d1) * t + 0.9375;
+    } else {
+        return n1 * (t -= 2.625 / d1) * t + 0.984375;
+    }
+}
+easeInOutQuad(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+easeInCubic(t) {
+    return t * t * t;
+}
+easeOutElastic(t) {
+    const c4 = (2 * Math.PI) / 3;
+    return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+}
+async navigateToPath(path) {
+    this.hideHologram();    
+    this.cleanupPagination(); 
+    
+    if (this.creatingObjects) return;
+    this.creatingObjects = true;    
+    
+    try {
+        if (this.currentPath !== '') {
+            this.pathHistory.push(this.currentPath);
+        } else if (this.currentPath === '' && path !== '') {
+            this.pathHistory.push('');
+        }        
+        
+        document.getElementById('status-message').style.display = 'block';
+        document.getElementById('status-message').querySelector('p').textContent = 'Loading...';        
+        
+        await this.transitionToNewView(path, false);        
+    } catch (error) {
+        console.error('Error navigating to path:', error);
+        document.getElementById('status-message').style.display = 'none';
+        this.showError("Could not load directory: " + error.message);
+        this.creatingObjects = false;
+    }
+}
+async goBack() {
+    this.hideHologram();    
+    this.cleanupPagination(); 
+    
+    if (this.currentPath === '' && this.pathHistory.length === 0) {
+        return;
+    }    
+    
+    if (this.creatingObjects) return;
+    this.creatingObjects = true;    
+    
+    try {
+        let targetPath = '';
+        if (this.pathHistory.length > 0) {
+            targetPath = this.pathHistory.pop();
+        } else {
+            targetPath = '';
+        }        
+        
+        document.getElementById('status-message').style.display = 'block';
+        document.getElementById('status-message').querySelector('p').textContent = 'Loading...';        
+        
+        await this.transitionToNewView(targetPath, true);        
+    } catch (error) {
+        console.error('Error going back:', error);
+        document.getElementById('status-message').style.display = 'none';
+        this.showError("Could not load directory: " + error.message);
+        this.creatingObjects = false;
+    }
+}
+async loadDirectoryContent(targetPath, isBackNavigation = false) {
+    try {
+        const apiUrl = targetPath === '' 
+            ? `${this.apiBase}/api/files`
+            : `${this.apiBase}/api/files/${encodeURIComponent(targetPath)}`;
+        const response = await fetch(apiUrl);        
+        
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        this.currentPath = targetPath;
+        this.depthLevel = this.pathHistory.length;        
+        
+        
+        this.updateSceneLighting(this.depthLevel);
+        
+        
+        this.updateNebulaLayers(this.depthLevel, isBackNavigation);
+        
+        
+        this.updateStarfieldForDepth();
+        
+        
+        if (this.antiLagSystem && this.antiLagSystem.updatePathDisplay) {
+            this.antiLagSystem.updatePathDisplay();
+        } else {
+            
+            const currentPathElement = document.getElementById('current-path');
+            if (currentPathElement) {
+                currentPathElement.textContent = this.formatPathForDisplay(data.current_path || '');
+            }
+        }
+        
+        await this.animateFileObjectsChange(data.items || []);        
+        
+        const isAvailable = (this.currentPath !== '' || this.pathHistory.length > 0);
+        const backButton = document.getElementById('back-button');
+
+        if (isAvailable) {
+            backButton.classList.add('available');
+        } else {
+            backButton.classList.remove('available');
+        }
+
+        backButton.style.display = 'flex'; 
+    } catch (error) {
+        console.error('Error loading directory:', error);
+        this.showError("Could not load directory: " + error.message);
+    } finally {
+        this.creatingObjects = false;
+    }
+}
+async animateDepthChange(isBackNavigation) {
+    const depthIndicator = document.getElementById('depth-indicator');
+    const depthText = this.getDepthText(this.depthLevel);   
+    const tempDepthElement = document.createElement('div');
+    tempDepthElement.style.position = 'fixed';
+    tempDepthElement.style.top = '20px';
+    tempDepthElement.style.right = '20px';
+    tempDepthElement.style.color = '#a0d2ff';
+    tempDepthElement.style.fontSize = '16px';
+    tempDepthElement.style.textShadow = '0 0 5px rgba(160, 210, 255, 0.7)';
+    tempDepthElement.style.zIndex = '1000';
+    tempDepthElement.style.opacity = '0';
+    tempDepthElement.style.transition = 'opacity 0.5s ease';
+    tempDepthElement.textContent = `Depth: ${depthText}`;    
+    document.body.appendChild(tempDepthElement);
+    setTimeout(() => {
+        tempDepthElement.style.opacity = '1';
+    }, 10);    
+    await new Promise(resolve => setTimeout(resolve, 500));    
+    depthIndicator.textContent = `Depth: ${depthText}`;    
+    tempDepthElement.style.opacity = '0';    
+    setTimeout(() => {
+        document.body.removeChild(tempDepthElement);
+    }, 500);
+}
+getDepthText(level) {
+    return level === 0 ? "Surface" : 
+           level === 1 ? "Shallow" :
+           level === 2 ? "Sub Shallow" :
+           level === 3 ? "Medium" : 
+           level === 4 ? "Deep Medium" :
+           level === 5 ? "Deep" :
+           level === 6 ? "Very Deep" :
+           level === 7 ? "Pre abyss" :
+           level === 8 ? "Abyss" : "Beyond Abyss";
+}
+async animateFileObjectsChange(items) {
+    this.showLoadingWindow("Launching");    
+    try {
+        if (this.fileObjects.children.length > 0) {
+            await this.animateObjectsFadeOut();
+        }        
+        await this.animateObjectsFadeIn(items);        
+    } catch (error) {
+        console.error('Animation error:', error);
+    } finally {
+        this.hideLoadingWindow();
+    }
+}
+async animateObjectsFadeIn(items) {
+    return new Promise((resolve) => {
+        const animationDuration = 1000; 
+        const startTime = Date.now();       
+        this.createFileObjects(items);
+        if (this.fileObjects.children.length === 0) {
+            resolve();
+            return;
+        }
+        const finalPositions = this.fileObjects.children.map(child => child.position.clone());
+        this.fileObjects.children.forEach((child, index) => {
+            child.scale.set(0.01, 0.01, 0.01);
+            child.material.transparent = true;
+            child.material.opacity = 0;
+            child.userData.finalPosition = finalPositions[index];
+        });
+        const animateClaymation = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / animationDuration, 1); 
+            this.fileObjects.children.forEach((child) => {
+                if (!child || !child.userData.finalPosition) return;
+                const scale = progress;
+                child.scale.set(scale, scale, scale);
+                child.material.opacity = progress;
+            });
+            if (progress < 1) {
+                requestAnimationFrame(animateClaymation);
+            } else {
+                this.fileObjects.children.forEach((child) => {
+                    if (child && child.userData.finalPosition) {
+                        child.scale.set(1, 1, 1);
+                        child.material.opacity = 1;
+                        child.material.transparent = false;
+                    }
+                });
+                resolve();
+            }
+        };
+        animateClaymation();
+    });
+}
+async animateObjectsFadeOut() {
+    return new Promise((resolve) => {
+        const animationDuration = 600;
+        const startTime = Date.now();       
+        if (this.fileObjects.children.length === 0) {
+            resolve();
+            return;
+        }
+        const animateClaymation = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / animationDuration, 1);   
+            this.fileObjects.children.forEach((child) => {
+                if (!child) return;
+                const scale = 1 - progress;
+                child.scale.set(scale, scale, scale);
+                child.material.transparent = true;
+                child.material.opacity = 1 - progress;
+            });
+            if (progress < 1) {
+                requestAnimationFrame(animateClaymation);
+            } else {
+                this.clearFileObjects();
+                resolve();
+            }
+        };
+        animateClaymation();
+    });
+}
+clearNameLabels() {
+    this.nameLabels.forEach(labelData => {
+        if (labelData.element && labelData.element.parentNode) {
+            try {
+                labelData.element.parentNode.removeChild(labelData.element);
+            } catch (e) {
+                console.warn('Error removing label element:', e);
+            }
+        }
+    });
+    this.nameLabels = [];
+}
+showError(message) {
+    document.getElementById('loading-screen').style.display = 'none';   
+    const errorElement = document.getElementById('error-message');
+    errorElement.querySelector('p').textContent = message;
+    errorElement.style.display = 'block';
+}
+animate() {
+    if (this.starfield && this.starfield.geometry && this.starfield.geometry.attributes.size) {
+    if (!this.scene || !this.camera || !this.renderer) {
+        requestAnimationFrame(() => this.animate());
+        return;
+    }}
+      if (this.antiLagSystem && this.antiLagSystem.updateAnimations) {
+        this.antiLagSystem.updateAnimations();
+    }
+    
+if (this.spaceSphere && this.spaceSphere.material && this.spaceSphere.material.map) {
+    const texture = this.spaceSphere.material.map;
+    
+    if (this.depthLevel >= 9 && texture.wrapS === THREE.RepeatWrapping) {
+        
+        const rotationSpeed = 0.001;
+        this.spaceSphere.userData.rotationAngle = (this.spaceSphere.userData.rotationAngle || 0) + rotationSpeed;
+        
+        const angle = this.spaceSphere.userData.rotationAngle;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        
+        
+        texture.matrixAutoUpdate = false;
+        texture.matrix.set(
+            cos, -sin, 0.5 - 0.5 * cos + 0.5 * sin,
+            sin, cos, 0.5 - 0.5 * sin - 0.5 * cos,
+            0, 0, 1
+        );
+        texture.needsUpdate = true;
+    }
+}
+    if (!this._debugged) {
+        this._debugged = true;
+        setTimeout(() => this.debugScene(), 1000);
+    }
+    
+    requestAnimationFrame(() => this.animate());   
+    const currentTime = Date.now() * 0.001; 
+    
+    
+    if (this.fileObjects) {
+        this.fileObjects.children.forEach(obj => {
+            if (obj.userData.floatPhase !== undefined) {
+                this.updateFloatingAnimation(obj, currentTime);
+                
+                
+                if (obj.userData.isFolder && obj.userData.ringGroup) {
+                    this.updateRingAnimation(obj.userData.ringGroup, currentTime);
+                }
+            }
+        });
+    }
+    
+this.updateMeteors();
+    
+    if (this.updateSpaceAnimations) {
+        this.updateSpaceAnimations(currentTime);
+    }
+    
+    
+    if (this.controls) {
+        this.controls.update();
+    }
+
+if (this.spaceSphere && this.spaceSphere.material && this.spaceSphere.material.map) {
+    const texture = this.spaceSphere.material.map;
+    
+    if (this.depthLevel >= 9 && texture.wrapS === THREE.RepeatWrapping) {
+        texture.offset.x += 0.0001; 
+        texture.needsUpdate = true;
+    }
+}
+    
+    
+    const moveSpeed = 0.1;
+    const moveVector = new THREE.Vector3();    
+    if (this.moveState.forward) moveVector.z -= moveSpeed;
+    if (this.moveState.backward) moveVector.z += moveSpeed;
+    if (this.moveState.left) moveVector.x -= moveSpeed;
+    if (this.moveState.right) moveVector.x += moveSpeed;
+    if (this.moveState.up) moveVector.y += moveSpeed;
+    if (this.moveState.down) moveVector.y -= moveSpeed;
+    moveVector.applyQuaternion(this.camera.quaternion);
+    this.camera.position.add(moveVector);
+    
+    
+    if (this.hologramVisible) {
+        this.updateHologramPosition();
+    }
+    
+    
+    if (this.anglerfish) {
+        this.anglerfish.update();
+    }    
+    
+    
+    this.updateNameLabels();    
+    
+    
+    if (this.lastMousePosition && this.mouseX !== undefined && this.mouseY !== undefined) {
+        const mouseMovementX = (this.mouseX - this.lastMousePosition.x) * 0.01;
+        const mouseMovementY = (this.mouseY - this.lastMousePosition.y) * 0.01;        
+        this.backgroundLayers.children.forEach(layer => {
+            const parallaxFactor = layer.userData.parallaxFactor || 0.05;
+            layer.rotation.y += mouseMovementX * parallaxFactor;
+            layer.rotation.x += mouseMovementY * parallaxFactor * 0.5;
+        });        
+        this.lastMousePosition.set(this.mouseX, this.mouseY);
+    }
+    
+    
+    if (this.fileObjects) {
+        this.fileObjects.children.forEach(obj => {
+            if (obj.userData.floatPhase !== undefined && Date.now() > obj.userData.initialDelay) {
+                const floatSpeed = obj.userData.floatSpeed;
+                const phase = obj.userData.floatPhase;
+                const amplitude = obj.userData.floatAmplitude;                
+                const targetY = obj.userData.originalPosition.y + 
+                               Math.sin(currentTime * floatSpeed + phase) * amplitude;                
+                const targetX = obj.userData.originalPosition.x + 
+                               Math.cos(currentTime * floatSpeed * 0.7 + phase) * amplitude * 0.5;
+                const targetZ = obj.userData.originalPosition.z + 
+                               Math.sin(currentTime * floatSpeed * 0.5 + phase) * amplitude * 0.5;
+                obj.position.y += (targetY - obj.position.y) * 0.005;
+                obj.position.x += (targetX - obj.position.x) * 0.005;
+                obj.position.z += (targetZ - obj.position.z) * 0.005;                
+                obj.rotation.x += 0.1 * floatSpeed;
+                obj.rotation.y += 0.7 * floatSpeed;
+                obj.rotation.z += 0.5 * floatSpeed;                
+                const scalePulse = 1 + Math.sin(currentTime * floatSpeed * 0.5 + phase) * 0.01;
+                obj.scale.set(scalePulse, scalePulse, scalePulse);
+            }
+        });
+    }
+    
+    
+    this.renderer.render(this.scene, this.camera);
+}
+updateFloatingAnimation(mesh, currentTime) {
+    const phase = currentTime * mesh.userData.floatSpeed + mesh.userData.floatPhase;
+    const originalPos = mesh.userData.originalPosition;
+    
+    if (mesh.userData.isFolder) {
+        
+        const orbitAngle = phase * mesh.userData.orbitSpeed * 10;
+        mesh.position.x = originalPos.x + Math.cos(orbitAngle) * mesh.userData.orbitRadius;
+        mesh.position.z = originalPos.z + Math.sin(orbitAngle) * mesh.userData.orbitRadius;
+        mesh.position.y = originalPos.y + Math.sin(phase) * mesh.userData.floatAmplitude;
+    } else {
+        
+        mesh.position.y = originalPos.y + Math.sin(phase) * mesh.userData.bobHeight;
+    }
+    
+    
+    mesh.rotation.x += mesh.userData.rotationSpeed.x;
+    mesh.rotation.y += mesh.userData.rotationSpeed.y;
+    mesh.rotation.z += mesh.userData.rotationSpeed.z;
+    
+    
+    const scalePulse = 1 + Math.sin(phase * 2) * 0.05;
+    mesh.scale.set(scalePulse, scalePulse, scalePulse);
+}
+updateRingAnimation(ringGroup, currentTime) {
+    
+    ringGroup.rotation.y += 0.5; 
+    
+    
+    if (ringGroup.userData.particles) {
+        ringGroup.userData.particles.children.forEach(particle => {
+            const angle = particle.userData.originalAngle + currentTime * particle.userData.orbitSpeed;
+            const radius = 1.1 + Math.sin(currentTime * particle.userData.pulseSpeed + particle.userData.pulseOffset) * 0.1;
+            
+            particle.position.x = Math.cos(angle) * radius;
+            particle.position.z = Math.sin(angle) * radius;
+            
+            
+            particle.material.opacity = 0.4 + Math.sin(currentTime * particle.userData.pulseSpeed) * 0.3;
+        });
+    }
+}
+
+updateNebulaLayers(depthLevel, isBackNavigation = false) {
+    
+    const textureLoader = new THREE.TextureLoader();
+     if (depthLevel >= 10) {
+        this.waterAudio.pause(); 
+    } else if (depthLevel >= 9) {
+        this.waterAudio.pause(); 
+        this.waterAudio.src = 'audio/3.mp3'; 
+        this.waterAudio.play(); 
+    }
+    
+    let textureIndex;
+    if (isBackNavigation && this.spaceTextureHistory.length > 0) {
+        
+        textureIndex = this.spaceTextureHistory.pop();
+    } else {
+        
+        textureIndex = Math.min(Math.floor(depthLevel), 10); 
+        
+        this.spaceTextureHistory.push(this.currentSpaceTextureIndex);
+    }
+    
+    this.currentSpaceTextureIndex = textureIndex;
+    
+    
+    this.updateStarfieldVisibility(depthLevel, isBackNavigation);
+    
+    
+    if (this.spaceSphere) {
+        const textureName = textureIndex === 0 ? 'space.jpg' : `space${textureIndex}.jpg`;
+        const texturePath = `textures/${textureName}`;
+        
+        textureLoader.load(
+            texturePath,
+            (newTexture) => {
+                this.spaceSphere.material.map = newTexture;
+                this.spaceSphere.material.needsUpdate = true;
+                
+      
+if (textureIndex === 9) {
+    newTexture.wrapS = THREE.RepeatWrapping;
+    newTexture.wrapT = THREE.RepeatWrapping;
+    newTexture.offset.set(0.5, 0.5); 
+    this.spaceSphere.userData.rotationAngle = 0; 
+}
+                console.log(`Space texture changed to: ${textureName}`);
+            },
+            undefined,
+            (error) => {
+                console.error(`Failed to load space texture: ${texturePath}`, error);
+                
+                textureLoader.load('textures/space.jpg', (fallbackTexture) => {
+                    this.spaceSphere.material.map = fallbackTexture;
+                    this.spaceSphere.material.needsUpdate = true;
+                });
+            }
+        );
+    }
+    
+    
+    if (this.nebulaLayers) {
+        this.nebulaLayers.forEach((nebula, index) => {
+            const baseOpacity = nebula.material.opacity;
+            const depthFactor = 1 - (depthLevel / this.maxDepth) * 0.5;
+            nebula.material.opacity = baseOpacity * depthFactor;
+        });
+    }
+}
+updateSpaceAnimations(currentTime) {
+    
+    if (this.nebulaLayers) {
+        this.nebulaLayers.forEach(nebula => {
+            nebula.rotation.y += nebula.userData.rotationSpeed;
+        });
+    }
+    
+    
+    if (this.starfield && this.starfield.geometry && this.starfield.geometry.attributes.size) {
+        const sizes = this.starfield.geometry.attributes.size.array;
+        
+        
+        if (!this.starfield.geometry.attributes.size.originalArray && sizes.length > 0) {
+            this.starfield.geometry.attributes.size.originalArray = new Float32Array(sizes);
+        }
+        
+        
+        for (let i = 0; i < sizes.length; i += 10) {
+            if (this.starfield.geometry.attributes.size.originalArray) {
+                const originalSize = this.starfield.geometry.attributes.size.originalArray[i];
+                const twinkle = Math.sin(currentTime * 3 + i) * 0.3 + 0.7;
+                
+                if (this.starfield.geometry.attributes.shineState && 
+                    this.starfield.geometry.attributes.shineState.array[i] === 0) {
+                    sizes[i] = originalSize * twinkle;
+                }
+            }
+        }
+        this.starfield.geometry.attributes.size.needsUpdate = true;
+    }
+}
+updateNebulaAnimations() {
+    const time = Date.now() * 0.001;
+    
+    
+    this.nebulaLayers.forEach(nebula => {
+        nebula.rotation.y = nebula.userData.originalRotation + time * nebula.userData.rotationSpeed;
+        nebula.rotation.x = Math.sin(time * 0.0001) * 0.1;
+    });
+    
+    
+    if (this.starfield) {
+        const positions = this.starfield.geometry.attributes.position.array;
+        const sizes = this.starfield.geometry.attributes.size.array;
+        
+        for (let i = 0; i < sizes.length; i++) {
+            const twinkle = Math.sin(time * 2 + i * 0.1) * 0.5 + 0.5;
+            sizes[i] = this.starfield.geometry.attributes.size.array[i] * (0.8 + twinkle * 0.4);
+        }
+        
+        this.starfield.geometry.attributes.size.needsUpdate = true;
+    }
+}
+updateConnectionLines() {
+    if (!this.connectionsGroup || this.fileObjects.children.length < 2) return;
+    
+    
+    this.connectionsGroup.userData.lines.forEach(line => {
+        this.connectionsGroup.remove(line);
+        if (line.geometry) line.geometry.dispose();
+        if (line.material) line.material.dispose();
+    });
+    this.connectionsGroup.userData.lines = [];
+    
+    
+    const positions = [];
+    this.fileObjects.children.forEach(child => {
+        positions.push(child.position.clone());
+    });
+    
+    
+    for (let i = 0; i < positions.length; i++) {
+        const nextIndex = (i + 1) % positions.length;
+        const prevIndex = i === 0 ? positions.length - 1 : i - 1;
+        
+        
+        this.createConnectionLine(positions[i], positions[nextIndex]);
+        
+        
+        if (i < positions.length / 2) { 
+            this.createConnectionLine(positions[i], positions[prevIndex]);
+        }
+    }
+    
+    
+    for (let i = 0; i < Math.min(positions.length, 5); i++) {
+        const index1 = Math.floor(Math.random() * positions.length);
+        let index2 = Math.floor(Math.random() * positions.length);
+        while (index2 === index1 || Math.abs(index2 - index1) === 1) {
+            index2 = Math.floor(Math.random() * positions.length);
+        }
+        
+        this.createConnectionLine(positions[index1], positions[index2], 0.2);
+    }
+}
+debugStarfield() {
+    if (!this.starfield) {
+        console.error('No starfield found!');
+        return;
+    }
+    
+    const positions = this.starfield.geometry.attributes.position.array;
+    const sizes = this.starfield.geometry.attributes.size.array;
+    
+    console.log('Starfield debug:');
+    console.log('- Total stars:', positions.length / 3);
+    console.log('- First star position:', positions[0], positions[1], positions[2]);
+    console.log('- First star size:', sizes[0]);
+    console.log('- Starfield in scene:', this.scene.children.includes(this.starfield));
+    console.log('- Camera position:', this.camera.position);
+    
+    
+    for (let i = 0; i < Math.min(5, positions.length / 3); i++) {
+        console.log(`Star ${i}:`, {
+            x: positions[i * 3],
+            y: positions[i * 3 + 1], 
+            z: positions[i * 3 + 2],
+            size: sizes[i]
+        });
+    }
+}
+createConnectionLine(point1, point2, opacity = 0.4) {
+    const geometry = new THREE.BufferGeometry().setFromPoints([point1, point2]);
+    
+    const material = new THREE.LineBasicMaterial({
+        color: 0x00ffff,
+        transparent: true,
+        opacity: opacity,
+        linewidth: 1
+    });
+    
+    const line = new THREE.Line(geometry, material);
+    this.connectionsGroup.userData.lines.push(line);
+    this.connectionsGroup.add(line);
+    
+    
+    line.userData = {
+        originalOpacity: opacity,
+        pulseSpeed: 2 + Math.random() * 3,
+        pulseOffset: Math.random() * Math.PI * 2
+    };
+}
+}
+        window.addEventListener('load', () => {
+            new FileExplorer();
+        });
+        const loadingText = document.getElementById('loading-text');
+        const texts = [
+            "Loading",
+            "Almost ready"
+        ];        
+        let textIndex = 0;
+        function changeLoadingText() {
+            loadingText.innerHTML = texts[textIndex] + '<span class="dots"></span>';
+            textIndex = (textIndex + 1) % texts.length;
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            setInterval(changeLoadingText, 3000);
+        });
+
+    </script>
+    
+</body>
+</html>
