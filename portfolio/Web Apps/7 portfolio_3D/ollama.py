@@ -26,7 +26,7 @@ app.add_middleware(
 MODELS = ["gemma-custom3:1b", "gemma3:1b"]
 
 # Create logs directory if it doesn't exist
-LOG_DIR = r"..\logs"
+LOG_DIR = r"..\"Web Apps"\"7 portfolio_3D"\logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # Setup logging
