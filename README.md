@@ -1,6 +1,6 @@
 # Portfolio frontend
 - install ollama and the model gemma3:1b (or download any model that can run on your machine smoothly)
-- in the command prompt create a model file in which you add your info "https://www.youtube.com/watch?v=VBtSCLU5tsU" and save it as gemma-custom3:1b (if you downloaded other models then add them manually into ollama.py and the frontend codes)
+- in the command prompt create a model file in which you add your info "https://www.youtube.com/watch?v=VBtSCLU5tsU" and save it as gemma-custom3:1b (if you downloaded other models then add them manually into ollama.py and the html codes)
 - change picture in portfolio/"Web Apps"/7 portfolio_3D/images/mendesk.png (white background or invisible recommended)
 - add your links in <div class="social-container"> line 34 in portfolio/"Web Apps"/7 portfolio_3D/index.html
 - add your contact infos in line 70 <div class="contact-container">
