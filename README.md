@@ -11,5 +11,5 @@ Maximum supported is python 3.12 which is current stable release; all these libr
 - install the python dependencies by : pip install fastapi uvicorn flask flask-cors pydantic
 - run directory_indexer located in portfolio/"Web Apps"/ by (python directory_indexer.py)
 - run both python files in terminal : (python app.py) and (python ollama.py)
-- forward a port in vs code 8000 and make it publicly visible then open the link in browser
+- forward a port in vs code 8000 and make it publicly visible then open the link in browser "https://youtube.com/shorts/SjuyffNvOLo?feature=share"
 
